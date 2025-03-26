@@ -564,24 +564,28 @@ export async function updateTaskHours(taskId: string, hours: number): Promise<bo
   }
 }
 
-// Get tasks for a specific developer
+// Get all tasks, developer key is just for authentication
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getTasksByDeveloper(developerKey: string): Promise<Task[]> {
+  // Changed to return all tasks regardless of developer assignment
+  // The developer key is only used for authentication, not filtering
+  
   // If using mock data, return it directly
   if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for developer tasks');
-    return MOCK_TASKS.filter(task => task.developer === developerKey);
+    console.log('Using mock data for tasks');
+    return MOCK_TASKS; // Return all mock tasks
   }
   
   try {
     const allTasks = await getAllTasks();
-    return allTasks.filter(task => task.developer === developerKey);
+    return allTasks; // Return all tasks instead of filtering by developer
   } catch (error) {
-    console.error('Error getting tasks by developer:', error);
+    console.error('Error getting tasks:', error);
     
-    // Return mock data filtered by developer in development
+    // Return all mock data in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for developer tasks (fallback)');
-      return MOCK_TASKS.filter(task => task.developer === developerKey);
+      console.log('Using mock data for tasks (fallback)');
+      return MOCK_TASKS; // Return all mock tasks
     }
     
     return [];

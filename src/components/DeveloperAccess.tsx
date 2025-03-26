@@ -37,11 +37,11 @@ export function DeveloperAccess({ onAccess }: DeveloperAccessProps) {
     <Card className="max-w-md mx-auto">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Developer Access</h2>
       <p className="text-sm text-gray-600 mb-4">
-        Enter your developer key to access your tasks and update their status.
+        Enter your developer key to access and manage all tasks in the system.
       </p>
       
       <div className="mb-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-        <p className="font-medium">Use &quot;Akanksha100991!&quot; to log in as DestinPQ</p>
+        <p className="font-medium">Log in as system administrator</p>
       </div>
       
       <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">

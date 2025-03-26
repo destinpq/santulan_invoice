@@ -152,7 +152,7 @@ export default function DeveloperPage() {
           <Card className="p-6">
             <h2 className="text-2xl font-bold text-center mb-6">Developer Dashboard</h2>
             <p className="text-gray-600 mb-8 text-center">
-              Enter your developer key to access your assigned tasks and update your progress.
+              Enter your developer key to access and manage all tasks in the system.
             </p>
             <DeveloperAccess onAccess={handleDeveloperAccess} />
           </Card>
@@ -163,7 +163,7 @@ export default function DeveloperPage() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Developer Dashboard</h2>
-                <p className="text-gray-600">Welcome, {developerKey}</p>
+                <p className="text-gray-600">Welcome, {developerKey} - You can manage all tasks</p>
               </div>
               <div className="flex gap-4">
                 <Button variant="outline" onClick={handleLogout}>
