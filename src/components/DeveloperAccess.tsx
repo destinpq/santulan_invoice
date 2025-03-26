@@ -41,7 +41,7 @@ export function DeveloperAccess({ onAccess }: DeveloperAccessProps) {
       </p>
       
       <div className="mb-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
-        <p className="font-medium">Use "Akanksha100991!" to log in as DestinPQ</p>
+        <p className="font-medium">Use &quot;Akanksha100991!&quot; to log in as DestinPQ</p>
       </div>
       
       <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
