@@ -6,21 +6,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    if (!body.month || !body.taskName || !body.type || !body.developer) {
+    if (!body.month || !body.description || !body.type || !body.developer) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
     
-    // Set default values if not provided
+    // Create a properly typed task object with all required fields
     const task = {
+      timestamp: new Date().toISOString(),
+      emailAddress: body.emailAddress || '',
+      dateReported: body.dateReported || new Date().toISOString().split('T')[0],
+      reportedBy: body.reportedBy || 'Anonymous',
+      type: body.type as 'bug' | 'feature',
+      severity: body.severity || 'Medium',
+      screenshot: body.screenshot || '',
+      bucket: body.bucket || 'Other',
+      description: body.description,
       month: body.month,
-      taskName: body.taskName,
-      type: body.type,
       developer: body.developer,
       hoursInvested: body.hoursInvested || 0,
       status: body.status || 'pending',
+      kanbanStatus: body.kanbanStatus || 'todo',
     };
     
     const success = await addTask(task);
