@@ -119,7 +119,7 @@ export default function DeveloperPage() {
         const task = tasks.find(t => t.id === taskId);
         const taskType = task ? (task.type === 'bug' ? 'Bug' : 'Feature') : 'Task';
         const taskDesc = task ? task.description : '';
-        setSuccess(`${taskType} "${taskDesc}" moved to Done and price updated to $${task?.type === 'bug' ? 200 : 300}.`);
+        setSuccess(`${taskType} "${taskDesc}" moved to Done and price updated to Rs${task?.type === 'bug' ? 200 : 300}.`);
       }
     } catch (err) {
       console.error('Error updating status:', err);

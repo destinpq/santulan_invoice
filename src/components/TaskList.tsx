@@ -95,7 +95,7 @@ export function TaskList({ tasks, onUpdateHours, developerMode = false }: TaskLi
                     <span className="font-medium text-gray-700">Hours:</span> {task.hoursInvested}
                   </div>
                   <div>
-                    <span className="font-medium text-gray-700">Cost:</span> ${task.cost}
+                    <span className="font-medium text-gray-700">Cost:</span> Rs{task.cost}
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Submitted:</span> {formattedDates[task.id] || 'Unknown'}

@@ -152,7 +152,7 @@ export default function Home() {
         />
         <StatsCard
           title="Pending Money"
-          value={loading ? 'Loading...' : `$${pendingMoney}`}
+          value={loading ? 'Loading...' : `Rs${pendingMoney}`}
           description="For incomplete tasks"
         />
         <StatsCard

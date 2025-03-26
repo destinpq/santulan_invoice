@@ -140,23 +140,25 @@ export function AddTaskForm({ onSubmit, isLoading = false }: AddTaskFormProps) {
       <div>
         <label className="block text-sm font-medium text-gray-700">Task Type</label>
         <div className="mt-2 space-x-4">
-          <label className="inline-flex items-center">
+          <label className="inline-flex items-center cursor-pointer">
             <input
               type="radio"
-              {...register('type')}
+              id="type-bug"
               value="bug"
-              className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              {...register('type')}
+              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-gray-700">Bug Fix ($200)</span>
+            <span className="ml-2 text-gray-700">Bug Fix (Rs200)</span>
           </label>
-          <label className="inline-flex items-center">
+          <label className="inline-flex items-center cursor-pointer">
             <input
               type="radio"
-              {...register('type')}
+              id="type-feature"
               value="feature"
-              className="form-radio h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              {...register('type')}
+              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-gray-700">New Feature ($300)</span>
+            <span className="ml-2 text-gray-700">New Feature (Rs300)</span>
           </label>
         </div>
         {errors.type && (

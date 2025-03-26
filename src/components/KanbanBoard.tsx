@@ -113,7 +113,7 @@ export function KanbanBoard({
       if (status === 'done' && currentColumn !== 'done') {
         const price = task.type === 'bug' ? 200 : 300;
         const confirmed = window.confirm(
-          `Moving this ${task.type} to Done will set its price to $${price}. Continue?`
+          `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
         );
         if (!confirmed) {
           setDraggedTask(null);
@@ -201,7 +201,7 @@ export function KanbanBoard({
                       </div>
                       <div className="flex justify-between items-center mt-1">
                         <span>Reported by: {task.reportedBy}</span>
-                        <span>Cost: ${task.cost}</span>
+                        <span>Cost: Rs{task.cost}</span>
                       </div>
                     </div>
 
@@ -217,7 +217,7 @@ export function KanbanBoard({
                             if (nextStatus === 'done') {
                               const price = task.type === 'bug' ? 200 : 300;
                               const confirmed = window.confirm(
-                                `Moving this ${task.type} to Done will set its price to $${price}. Continue?`
+                                `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
                               );
                               if (!confirmed) return;
                             }

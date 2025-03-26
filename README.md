@@ -5,7 +5,7 @@ A Next.js application for tracking development tasks, hours invested, and costs.
 ## Features
 
 - View tasks organized by month or category/bucket
-- Different costs for bug fixes ($200) and new features ($300)
+- Different costs for bug fixes (Rs200) and new features (Rs300)
 - Track tasks with detailed information including reporter, severity, screenshots, and more
 - Developer portal for updating hours on assigned tasks
 - Dashboard with key metrics (total tasks, pending money, hours invested)
