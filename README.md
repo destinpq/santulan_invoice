@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Invoice Tracker
 
-## Getting Started
+A Next.js application for tracking development tasks, hours invested, and costs. This application uses Google Sheets as a backend database.
 
-First, run the development server:
+## Features
 
+- View tasks organized by month or category/bucket
+- Different costs for bug fixes ($200) and new features ($300)
+- Track tasks with detailed information including reporter, severity, screenshots, and more
+- Developer portal for updating hours on assigned tasks
+- Dashboard with key metrics (total tasks, pending money, hours invested)
+- Modern UI with responsive design
+
+## Prerequisites
+
+- Node.js (v16.x or newer)
+- npm or yarn
+- A Google Cloud Platform account with Google Sheets API enabled
+- A service account with access to Google Sheets API
+
+## Setup
+
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd invoice-tracker
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Set up Google Sheets
+
+You'll need to:
+- Create a new Google Sheet with a sheet named "Tasks" and the following headers in row 1:
+  - ID, Timestamp, EmailAddress, DateReported, ReportedBy, Type, Severity, Screenshot, Bucket, Description, Month, Developer, HoursInvested, Cost, Status
+- Create a service account in Google Cloud Console and download the JSON credentials
+- Share your Google Sheet with the email address of your service account (with Editor permissions)
+
+4. Set up environment variables
+
+Create a `.env.local` file in the root directory with the following variables:
+```
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account-email@your-project-id.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=yoursecretkey123
+```
+
+5. Run the development server
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Public Dashboard
 
-## Learn More
+The home page displays:
+- Statistics about tasks, costs, and hours
+- Tasks organized by month or category (switchable view)
+- A form to add new tasks with detailed information
 
-To learn more about Next.js, take a look at the following resources:
+### Developer Portal
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Developers can access their tasks by:
+1. Clicking on "Developer Login" on the home page
+2. Entering their unique developer key
+3. Viewing their assigned tasks
+4. Updating the hours invested in their tasks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Task Fields
 
-## Deploy on Vercel
+Each task includes the following information:
+- **Email Address**: The email of the person who reported the issue
+- **Date Reported**: When the issue was reported
+- **Reported By**: Name of the person who reported the issue
+- **Type**: Bug or Feature (affects cost calculation)
+- **Severity**: Urgency level (Low, Medium, High, Critical, Urgent)
+- **Screenshot**: Optional URL to a screenshot
+- **Bucket/Category**: What area the task belongs to
+- **Description**: Detailed description of the task
+- **Month**: Which month the task is assigned to
+- **Developer**: The developer responsible for the task
+- **Hours Invested**: Time spent on the task
+- **Status**: Pending or Completed
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `/src/app`: Next.js app router pages
+- `/src/components`: React components
+- `/src/lib`: Utility functions and API integrations
+
+## License
+
+MIT
