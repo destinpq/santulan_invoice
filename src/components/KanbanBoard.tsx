@@ -23,6 +23,7 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
+  const [activeColumn, setActiveColumn] = useState<KanbanStatus>('todo');
   
   // Simplified to 3 columns
   const columns: KanbanStatus[] = ['todo', 'doing', 'done'];
@@ -134,114 +135,169 @@ export function KanbanBoard({
     setDragOverColumn(null);
   };
 
+  // Mobile column tabs
+  const renderMobileTabs = () => (
+    <div className="flex border-b mb-4 md:hidden">
+      {columns.map(column => (
+        <button
+          key={column}
+          className={`flex-1 py-2 font-medium text-sm ${
+            activeColumn === column
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+          onClick={() => setActiveColumn(column)}
+        >
+          {getColumnName(column)} 
+          <span className="ml-1 text-xs">
+            ({getColumnTasks(column).length})
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-2">
+    <div className="p-2">
+      {/* Mobile instructions */}
+      <div className="md:hidden mb-4 text-sm text-gray-600 italic px-2 text-center">
+        {!readOnly ? "Tap 'Move to' button to change task status" : ""}
+      </div>
+
+      {/* Mobile tabs */}
+      {renderMobileTabs()}
+
       {draggedTask && !readOnly && (
         <div className="fixed bottom-4 right-4 bg-blue-600 text-white py-2 px-4 rounded-md shadow-lg z-50 animate-pulse">
           Dragging task... Drop to change status
         </div>
       )}
-      {columns.map(column => (
-        <div key={column} 
-          className={`flex flex-col rounded-lg border ${getColumnColor(column)} 
-            ${readOnly ? 'shadow-none' : 'hover:shadow-md transition-shadow'}
-            ${dragOverColumn === column ? 'ring-2 ring-blue-400 bg-blue-50/50' : ''}`}
-          onDragOver={(e) => handleDragOver(e, column)}
-          onDrop={(e) => handleDrop(e, column)}
-          onDragLeave={() => setDragOverColumn(null)}
-        >
-          <div className={`p-4 border-b border-inherit ${readOnly ? '' : 'font-bold'}`}>
-            <h3 className="font-semibold text-lg">
-              {getColumnName(column)} ({getColumnTasks(column).length})
-            </h3>
-          </div>
-          <div className={`flex-1 p-3 ${readOnly ? 'min-h-[300px]' : 'min-h-[500px]'} max-h-[calc(100vh-300px)] overflow-y-auto
-            ${dragOverColumn === column ? 'bg-blue-50/30' : ''}`}
-          >
-            {getColumnTasks(column).map(task => (
-              <div 
-                key={task.id}
-                className={`mb-3 ${!readOnly ? 'cursor-grab' : ''} 
-                  ${draggedTask === task.id ? 'opacity-50' : 'opacity-100'}`}
-                draggable={!readOnly && !isLoading}
-                onDragStart={() => handleDragStart(task.id)}
-                onDragEnd={handleDragEnd}
-              >
-                <Card 
-                  className={`${readOnly ? '' : 'hover:shadow-md transition-shadow'}`}
-                >
-                  <div className="p-3">
-                    <div className="flex gap-2 mb-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTaskTypeColor(task.type)}`}>
-                        {task.type === 'bug' ? 'Bug' : 'Feature'}
-                      </span>
-                      {task.severity && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          task.severity.toLowerCase().includes('high') || task.severity.toLowerCase().includes('urgent') 
-                            ? 'bg-orange-100 text-orange-800' 
-                            : task.severity.toLowerCase().includes('medium') 
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {task.severity}
-                        </span>
-                      )}
-                    </div>
-                    
-                    <h4 className="font-medium text-sm mb-2" title={task.description}>
-                      {task.description?.length > 80 
-                        ? `${task.description.substring(0, 80)}...` 
-                        : task.description || 'No description'}
-                    </h4>
-                    
-                    <div className="text-xs text-gray-600 mb-3">
-                      <div className="flex justify-between items-center">
-                        <span>Developer: {task.developer}</span>
-                        <span>{task.hoursInvested} hrs</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-1">
-                        <span>Reported by: {task.reportedBy}</span>
-                        <span>Cost: Rs{task.cost}</span>
-                      </div>
-                    </div>
 
-                    {!readOnly && onStatusUpdate && column !== 'done' && (
-                      <div className="mt-2">
-                        <Button
-                          variant={column === 'todo' ? 'primary' : 'outline'}
-                          disabled={isLoading}
-                          onClick={() => {
-                            const nextStatus = column === 'todo' ? 'doing' : 'done';
-                            
-                            // If moving to done, confirm with user as it will update the price
-                            if (nextStatus === 'done') {
-                              const price = task.type === 'bug' ? 200 : 300;
-                              const confirmed = window.confirm(
-                                `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
-                              );
-                              if (!confirmed) return;
-                            }
-                            
-                            onStatusUpdate(task.id, nextStatus);
-                          }}
-                          className="w-full text-sm py-1"
-                        >
-                          Move to {column === 'todo' ? 'Doing' : 'Done'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+      {/* Desktop view - all columns side by side */}
+      <div className="hidden md:grid md:grid-cols-3 gap-6">
+        {columns.map(column => (
+          <div key={column} 
+            className={`flex flex-col rounded-lg border ${getColumnColor(column)} 
+              ${readOnly ? 'shadow-none' : 'hover:shadow-md transition-shadow'}
+              ${dragOverColumn === column ? 'ring-2 ring-blue-400 bg-blue-50/50' : ''}`}
+            onDragOver={(e) => handleDragOver(e, column)}
+            onDrop={(e) => handleDrop(e, column)}
+            onDragLeave={() => setDragOverColumn(null)}
+          >
+            <div className={`p-4 border-b border-inherit ${readOnly ? '' : 'font-bold'}`}>
+              <h3 className="font-semibold text-lg">
+                {getColumnName(column)} ({getColumnTasks(column).length})
+              </h3>
+            </div>
+            <div className={`flex-1 p-3 ${readOnly ? 'min-h-[300px]' : 'min-h-[500px]'} max-h-[calc(100vh-300px)] overflow-y-auto
+              ${dragOverColumn === column ? 'bg-blue-50/30' : ''}`}
+            >
+              {renderColumnTasks(column)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile view - active column only */}
+      <div className="md:hidden">
+        <div className={`flex flex-col rounded-lg border ${getColumnColor(activeColumn)} 
+            ${readOnly ? 'shadow-none' : 'hover:shadow-md transition-shadow'}`}
+        >
+          <div className={`p-3 min-h-[50vh] overflow-y-auto`}>
+            {renderColumnTasks(activeColumn)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Helper function to render tasks for a column
+  function renderColumnTasks(column: KanbanStatus) {
+    const columnTasks = getColumnTasks(column);
+    
+    if (columnTasks.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-24 rounded-lg text-gray-500 text-sm">
+          No tasks
+        </div>
+      );
+    }
+
+    return columnTasks.map(task => (
+      <div 
+        key={task.id}
+        className={`mb-3 ${!readOnly ? 'cursor-grab' : ''} 
+          ${draggedTask === task.id ? 'opacity-50' : 'opacity-100'}`}
+        draggable={!readOnly && !isLoading}
+        onDragStart={() => handleDragStart(task.id)}
+        onDragEnd={handleDragEnd}
+      >
+        <Card 
+          className={`${readOnly ? '' : 'hover:shadow-md transition-shadow'}`}
+        >
+          <div className="p-3">
+            <div className="flex gap-2 mb-2 flex-wrap">
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTaskTypeColor(task.type)}`}>
+                {task.type === 'bug' ? 'Bug' : 'Feature'}
+              </span>
+              {task.severity && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  task.severity.toLowerCase().includes('high') || task.severity.toLowerCase().includes('urgent') 
+                    ? 'bg-orange-100 text-orange-800' 
+                    : task.severity.toLowerCase().includes('medium') 
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {task.severity}
+                </span>
+              )}
+            </div>
+            
+            <h4 className="font-medium text-sm mb-2" title={task.description}>
+              {task.description?.length > 80 
+                ? `${task.description.substring(0, 80)}...` 
+                : task.description || 'No description'}
+            </h4>
+            
+            <div className="text-xs text-gray-600 mb-3">
+              <div className="flex justify-between items-center">
+                <span>Developer: {task.developer}</span>
+                <span>{task.hoursInvested} hrs</span>
               </div>
-            ))}
-            {getColumnTasks(column).length === 0 && (
-              <div className="flex items-center justify-center h-24 rounded-lg text-gray-500 text-sm">
-                No tasks
+              <div className="flex justify-between items-center mt-1">
+                <span>Reported by: {task.reportedBy}</span>
+                <span>Cost: Rs{task.cost}</span>
+              </div>
+            </div>
+
+            {!readOnly && onStatusUpdate && column !== 'done' && (
+              <div className="mt-2">
+                <Button
+                  variant={column === 'todo' ? 'primary' : 'outline'}
+                  disabled={isLoading}
+                  onClick={() => {
+                    const nextStatus = column === 'todo' ? 'doing' : 'done';
+                    
+                    // If moving to done, confirm with user as it will update the price
+                    if (nextStatus === 'done') {
+                      const price = task.type === 'bug' ? 200 : 300;
+                      const confirmed = window.confirm(
+                        `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
+                      );
+                      if (!confirmed) return;
+                    }
+                    
+                    onStatusUpdate(task.id, nextStatus);
+                  }}
+                  className="w-full text-sm py-1"
+                >
+                  Move to {column === 'todo' ? 'Doing' : 'Done'}
+                </Button>
               </div>
             )}
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        </Card>
+      </div>
+    ));
+  }
 }

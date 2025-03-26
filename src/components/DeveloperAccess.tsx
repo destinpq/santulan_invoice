@@ -34,37 +34,37 @@ export function DeveloperAccess({ onAccess }: DeveloperAccessProps) {
   };
 
   return (
-    <Card className="max-w-md mx-auto">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Developer Access</h2>
-      <p className="text-sm text-gray-600 mb-4">
+    <Card className="w-full max-w-md mx-auto px-4 py-5 sm:px-6">
+      <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3">Developer Access</h2>
+      <p className="text-xs sm:text-sm text-gray-600 mb-3">
         Enter your developer key to access and manage all tasks in the system.
       </p>
       
-      <div className="mb-4 bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+      <div className="mb-3 bg-blue-50 p-2 sm:p-3 rounded-md text-xs sm:text-sm text-blue-800">
         <p className="font-medium">Log in as system administrator</p>
       </div>
       
-      <form onSubmit={handleSubmit(submitHandler)} className="space-y-4">
+      <form onSubmit={handleSubmit(submitHandler)} className="space-y-3 sm:space-y-4">
         <div>
-          <label htmlFor="key" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="key" className="block text-xs sm:text-sm font-medium text-gray-700">
             Developer Key
           </label>
           <input
             id="key"
             type="text"
             {...register('key')}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
             placeholder="Enter your unique developer key"
           />
           {errors.key && (
-            <p className="mt-1 text-sm text-red-600">{errors.key.message}</p>
+            <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.key.message}</p>
           )}
         </div>
         
         <Button
           type="submit"
           disabled={isLoading}
-          className="w-full"
+          className="w-full text-sm"
         >
           {isLoading ? 'Accessing...' : 'Access Tasks'}
         </Button>

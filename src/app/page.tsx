@@ -144,7 +144,7 @@ export default function Home() {
   return (
     <div className="space-y-8">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Tasks"
           value={loading ? 'Loading...' : tasks.length}
@@ -168,37 +168,49 @@ export default function Home() {
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow">
-        <div className="flex space-x-2 mb-4 sm:mb-0">
-          <Button 
-            variant={viewMode === 'month' ? 'primary' : 'outline'} 
-            onClick={() => setViewMode('month')}
-          >
-            View by Month
-          </Button>
-          <Button 
-            variant={viewMode === 'bucket' ? 'primary' : 'outline'} 
-            onClick={() => setViewMode('bucket')}
-          >
-            View by Category
-          </Button>
-          <Button 
-            variant={viewMode === 'kanban' ? 'primary' : 'outline'} 
-            onClick={() => setViewMode('kanban')}
-          >
-            Kanban Board
-          </Button>
-        </div>
-        <div className="flex space-x-2">
-          <Button onClick={() => setShowAddForm(!showAddForm)}>
-            {showAddForm ? 'Cancel' : 'Add New Task'}
-          </Button>
-          <Link href="/efficiency" className="inline-block">
-            <Button variant="outline">Efficiency Analysis</Button>
-          </Link>
-          <Link href="/developer" className="inline-block">
-            <Button variant="secondary">Developer Login</Button>
-          </Link>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <div className="flex flex-col space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={viewMode === 'month' ? 'primary' : 'outline'} 
+              onClick={() => setViewMode('month')}
+              className="flex-1 sm:flex-none text-sm"
+            >
+              By Month
+            </Button>
+            <Button 
+              variant={viewMode === 'bucket' ? 'primary' : 'outline'} 
+              onClick={() => setViewMode('bucket')}
+              className="flex-1 sm:flex-none text-sm"
+            >
+              By Category
+            </Button>
+            <Button 
+              variant={viewMode === 'kanban' ? 'primary' : 'outline'} 
+              onClick={() => setViewMode('kanban')}
+              className="flex-1 sm:flex-none text-sm"
+            >
+              Kanban
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="flex-1 sm:flex-none text-sm"
+            >
+              {showAddForm ? 'Cancel' : 'Add New Task'}
+            </Button>
+            <Link href="/efficiency" className="flex-1 sm:flex-none">
+              <Button variant="outline" className="w-full text-sm">
+                Efficiency Analysis
+              </Button>
+            </Link>
+            <Link href="/developer" className="flex-1 sm:flex-none">
+              <Button variant="secondary" className="w-full text-sm">
+                Developer Login
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

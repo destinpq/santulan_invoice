@@ -22,19 +22,20 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="manifest" href="/manifest.json" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={`${inter.className} min-h-screen bg-gray-50`}>
         <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Invoice Tracker</h1>
+          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Invoice Tracker</h1>
           </div>
         </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
           {children}
         </main>
         <footer className="bg-white border-t border-gray-200 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <p className="text-sm text-gray-500 text-center">
+          <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+            <p className="text-xs sm:text-sm text-gray-500 text-center">
               &copy; {new Date().getFullYear()} Invoice Tracker. All rights reserved.
             </p>
           </div>
