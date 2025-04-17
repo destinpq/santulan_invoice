@@ -18,8 +18,14 @@ export interface Task {
   hoursInvested: number;
   cost: number;
   status: 'pending' | 'completed';
+  timeSpent?: {
+    startTime?: string;
+    endTime?: string;
+    totalHours: number;
+    lastUpdated: string;
+  };
+  resolvedOn?: string;
   kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done';
-  lastModified?: string; // Timestamp of the last status update
 }
 
 // Get the spreadsheet ID from env
@@ -44,8 +50,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 3.5,
     cost: 200,
     status: 'completed',
-    kanbanStatus: 'done',
-    lastModified: new Date(2023, 4, 5).toISOString()
+    timeSpent: {
+      totalHours: 3.5,
+      lastUpdated: new Date(2023, 4, 5).toISOString()
+    },
+    resolvedOn: new Date(2023, 4, 5).toISOString(),
+    kanbanStatus: 'done'
   },
   {
     id: '2',
@@ -62,8 +72,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 5,
     cost: 300,
     status: 'completed',
-    kanbanStatus: 'done',
-    lastModified: new Date(2023, 4, 20).toISOString()
+    timeSpent: {
+      totalHours: 5,
+      lastUpdated: new Date(2023, 4, 20).toISOString()
+    },
+    resolvedOn: new Date(2023, 4, 20).toISOString(),
+    kanbanStatus: 'done'
   },
   {
     id: '3',
@@ -80,8 +94,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 8,
     cost: 200,
     status: 'pending',
-    kanbanStatus: 'todo',
-    lastModified: new Date(2023, 5, 5).toISOString()
+    timeSpent: {
+      totalHours: 8,
+      lastUpdated: new Date(2023, 5, 5).toISOString()
+    },
+    resolvedOn: '',
+    kanbanStatus: 'todo'
   },
   {
     id: '4',
@@ -98,8 +116,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 6.5,
     cost: 300,
     status: 'completed',
-    kanbanStatus: 'done',
-    lastModified: new Date(2023, 5, 25).toISOString()
+    timeSpent: {
+      totalHours: 6.5,
+      lastUpdated: new Date(2023, 5, 25).toISOString()
+    },
+    resolvedOn: new Date(2023, 5, 25).toISOString(),
+    kanbanStatus: 'done'
   },
   {
     id: '5',
@@ -116,8 +138,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 2.5,
     cost: 200,
     status: 'pending',
-    kanbanStatus: 'todo',
-    lastModified: new Date(2023, 6, 1).toISOString()
+    timeSpent: {
+      totalHours: 2.5,
+      lastUpdated: new Date(2023, 6, 1).toISOString()
+    },
+    resolvedOn: '',
+    kanbanStatus: 'todo'
   },
   {
     id: '6',
@@ -134,8 +160,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 10,
     cost: 300,
     status: 'pending',
-    kanbanStatus: 'in-progress',
-    lastModified: new Date(2023, 6, 25).toISOString()
+    timeSpent: {
+      totalHours: 10,
+      lastUpdated: new Date(2023, 6, 25).toISOString()
+    },
+    resolvedOn: '',
+    kanbanStatus: 'todo'
   },
   {
     id: '7',
@@ -152,8 +182,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 9,
     cost: 200,
     status: 'pending',
-    kanbanStatus: 'todo',
-    lastModified: new Date(2023, 7, 5).toISOString()
+    timeSpent: {
+      totalHours: 9,
+      lastUpdated: new Date(2023, 7, 5).toISOString()
+    },
+    resolvedOn: '',
+    kanbanStatus: 'todo'
   },
   {
     id: '8',
@@ -170,8 +204,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 7,
     cost: 300,
     status: 'completed',
-    kanbanStatus: 'done',
-    lastModified: new Date(2023, 8, 20).toISOString()
+    timeSpent: {
+      totalHours: 7,
+      lastUpdated: new Date(2023, 8, 20).toISOString()
+    },
+    resolvedOn: new Date(2023, 8, 20).toISOString(),
+    kanbanStatus: 'done'
   },
   {
     id: '9',
@@ -188,8 +226,12 @@ const MOCK_TASKS: Task[] = [
     hoursInvested: 5,
     cost: 300,
     status: 'pending',
-    kanbanStatus: 'todo',
-    lastModified: new Date(2023, 9, 5).toISOString()
+    timeSpent: {
+      totalHours: 5,
+      lastUpdated: new Date(2023, 9, 5).toISOString()
+    },
+    resolvedOn: '',
+    kanbanStatus: 'todo'
   }
 ];
 
@@ -256,10 +298,8 @@ async function getSheetInfo() {
   try {
     const sheets = await getGoogleSheetsClient();
     
-    // When using mock data, sheets will be null
     if (!sheets) {
-      SHEET_NAME = 'MockSheet';
-      return SHEET_NAME;
+      throw new Error('Could not initialize Google Sheets client');
     }
     
     // Get spreadsheet information
@@ -272,7 +312,6 @@ async function getSheetInfo() {
       const firstSheet = spreadsheet.data.sheets[0];
       if (firstSheet.properties && firstSheet.properties.title) {
         SHEET_NAME = firstSheet.properties.title;
-        console.log(`Found sheet: ${SHEET_NAME}`);
         return SHEET_NAME;
       }
     }
@@ -280,129 +319,79 @@ async function getSheetInfo() {
     throw new Error('No sheets found in the spreadsheet');
   } catch (error) {
     console.error('Error getting sheet info:', error);
-    // Default to a common sheet name if we can't get the actual one
-    SHEET_NAME = 'Sheet1';
-    return SHEET_NAME;
-  }
-}
-
-// Function to ensure the sheet has the proper headers
-async function ensureSheetHeaders() {
-  try {
-    const sheets = await getGoogleSheetsClient();
-    const sheetName = await getSheetInfo();
-    
-    // When using mock data, sheets will be null
-    if (!sheets) {
-      return true; // Skip header verification with mock data
-    }
-    
-    // Just read the headers to understand the column structure
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${sheetName}!A1:Z1`,
-    });
-    
-    const rows = response.data.values || [];
-    
-    if (rows.length > 0) {
-      console.log('Found existing headers:', rows[0]);
-    } else {
-      console.log('No headers found in the sheet. Using mock data structure.');
-    }
-    
-    // Never try to update headers, just adapt to what's already there
-    return true;
-  } catch (error) {
-    console.error('Error reading sheet headers:', error);
-    // Don't fail the whole operation because of header issues
-    return true;
+    throw error;
   }
 }
 
 // Get all tasks from the spreadsheet
 export async function getAllTasks(): Promise<Task[]> {
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data');
-    return MOCK_TASKS;
-  }
-  
   try {
     const sheets = await getGoogleSheetsClient();
-    
-    // If sheets is null (mock data), return mock data
     if (!sheets) {
-      return MOCK_TASKS;
+      throw new Error('Could not initialize Google Sheets client');
     }
     
     // Make sure we have the correct sheet name
     const sheetName = await getSheetInfo();
     
-    // Just read the headers, don't try to modify them
-    try {
-      await ensureSheetHeaders();
-    } catch (headerError) {
-      console.warn('Header verification failed but continuing:', headerError);
+    // Read all data
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${sheetName}`,
+    });
+
+    const rows = response.data.values || [];
+    if (rows.length <= 1) {
+      console.log('No data found in sheet (or only headers)');
+      return [];
     }
     
-    // Try to get values from the sheet
-    try {
-      // Read all data
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${sheetName}`,
-      });
-
-      const rows = response.data.values || [];
-      if (rows.length <= 1) {
-        console.log('No data found in sheet (or only headers)');
-        return [];
+    // Skip the header row and map the data to our Task interface
+    return rows.slice(1).map((row, index) => {
+      const id = row[0] || `generated-${index}`;
+      const hoursInvested = parseFloat(row[9] || '0');
+      const resolvedOn = row[10] || '';
+      const type = determineBugOrFeature(row[4] || '');
+      
+      // Determine kanban status based on resolvedOn field
+      let kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done' = 'todo';
+      if (resolvedOn) {
+        kanbanStatus = 'done';
+      } else if (row[15]) { // Check if there's an explicit kanban status in column P
+        const status = (row[15] || '').toLowerCase();
+        if (status === 'in-progress' || status === 'review') {
+          kanbanStatus = status;
+        }
       }
-      
-      console.log(`Found ${rows.length-1} rows of data`);
-      
-      // Skip the header row and map the data to our Task interface
-      // Adapt column indices to match the actual structure
-      return rows.slice(1).map((row, index) => {
-        // Generate an ID if not present
-        const id = row[0] || `generated-${index}`;
-        
-        // Map the data to our Task interface as best we can
-        return {
-          id,
-          timestamp: row[0] || new Date().toISOString(), // Timestamp (usually first column in form responses)
-          emailAddress: row[1] || '',                    // Email Address
-          dateReported: row[2] || '',                    // Date reported
-          reportedBy: row[1] || '',                      // Reported by (use email if not present)
-          type: determineBugOrFeature(row[4] || ''),     // Based on "Is it a new feature or bug?" column
-          severity: row[5] || 'Medium',                  // Urgency / Severity
-          screenshot: row[6] || '',                      // Screenshot URL
-          bucket: row[7] || 'Other',                     // Bucket
-          description: row[8] || '',                     // Description
-          month: determineMonth(row[2] || ''),           // Extract month from date reported
-          developer: row[10] || 'unassigned',            // Developer
-          hoursInvested: parseFloat(row[11] || '0') || 0, // Hours invested
-          cost: parseFloat(row[12] || '0') || determineCost(row[4] || ''), // Cost
-          status: row[13] === 'completed' ? 'completed' : 'pending', // Status
-          kanbanStatus: row[14] || 'todo',               // Kanban status
-          lastModified: row[15] || ''                    // Last modified timestamp
-        };
-      });
-    } catch (error) {
-      console.error('Error reading sheet data:', error);
-      return MOCK_TASKS; // Fall back to mock data on error
-    }
+
+      return {
+        id,
+        timestamp: row[0] || new Date().toISOString(),
+        emailAddress: row[1] || '',
+        dateReported: row[2] || '',
+        reportedBy: row[3] || '',
+        type,
+        severity: row[5] || 'Medium',
+        screenshot: row[6] || '',
+        bucket: row[7] || 'Other',
+        description: row[8] || '',
+        hoursInvested,
+        resolvedOn,
+        month: determineMonth(row[2] || ''),
+        developer: 'destinpq',
+        cost: determineCost(type, hoursInvested),
+        status: resolvedOn ? 'completed' : 'pending',
+        timeSpent: {
+          totalHours: hoursInvested,
+          lastUpdated: resolvedOn || new Date().toISOString()
+        },
+        kanbanStatus,
+        lastModified: resolvedOn || ''
+      };
+    });
   } catch (error) {
     console.error('Error fetching tasks:', error);
-    
-    // If in development, return mock data instead of failing
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data (fallback)');
-      return MOCK_TASKS;
-    }
-    
-    return [];
+    throw error;
   }
 }
 
@@ -419,9 +408,11 @@ function determineBugOrFeature(typeField: string): 'bug' | 'feature' {
   }
 }
 
-// Helper function to determine cost based on type
-function determineCost(typeField: string): number {
-  return determineBugOrFeature(typeField) === 'bug' ? 200 : 300;
+// Helper function to determine cost based on type and hours
+function determineCost(typeField: string | 'bug' | 'feature', hoursInvested: number = 0): number {
+  const type = typeof typeField === 'string' ? determineBugOrFeature(typeField) : typeField;
+  const hourlyRate = type === 'bug' ? 200 : 300;
+  return Math.round(hourlyRate * hoursInvested);
 }
 
 // Helper function to extract month from date
@@ -465,8 +456,8 @@ export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean>
     // Generate a unique ID
     const id = Date.now().toString();
     
-    // Calculate cost based on type
-    const cost = task.type === 'bug' ? 200 : 300;
+    // Calculate cost based on type and hours
+    const cost = determineCost(task.type, task.hoursInvested);
     
     // Current timestamp
     const timestamp = new Date().toISOString();
@@ -678,72 +669,42 @@ export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
 
 // Calculate pending money
 export async function calculatePendingMoney(): Promise<number> {
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for pending money calculation');
-    return MOCK_TASKS
-      .filter(task => task.status === 'pending')
-      .reduce((total, task) => total + task.cost, 0);
-  }
-  
   try {
     const allTasks = await getAllTasks();
-    return allTasks
-      .filter(task => task.status === 'pending')
-      .reduce((total, task) => total + task.cost, 0);
+    console.log('Calculating pending money for all tasks...');
+    
+    const total = allTasks.reduce((total, task) => {
+      const hourlyRate = task.type === 'bug' ? 200 : 300;
+      const taskCost = hourlyRate * task.hoursInvested;
+      console.log(`Task ${task.id}: type=${task.type}, hours=${task.hoursInvested}, rate=${hourlyRate}, cost=${taskCost}`);
+      return total + taskCost;
+    }, 0);
+    
+    console.log('Total pending money:', total);
+    return total;
   } catch (error) {
     console.error('Error calculating pending money:', error);
-    
-    // Return mock calculation in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for pending money (fallback)');
-      return MOCK_TASKS
-        .filter(task => task.status === 'pending')
-        .reduce((total, task) => total + task.cost, 0);
-    }
-    
     return 0;
   }
 }
 
 // Calculate total time invested
 export async function calculateTotalHours(): Promise<number> {
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for total hours calculation');
-    return MOCK_TASKS.reduce((total, task) => total + task.hoursInvested, 0);
-  }
-  
   try {
     const allTasks = await getAllTasks();
     return allTasks.reduce((total, task) => total + task.hoursInvested, 0);
   } catch (error) {
     console.error('Error calculating total hours:', error);
-    
-    // Return mock calculation in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for total hours (fallback)');
-      return MOCK_TASKS.reduce((total, task) => total + task.hoursInvested, 0);
-    }
-    
     return 0;
   }
 }
 
-// Update task kanban status
+// Update task status
 export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done'): Promise<boolean> {
   try {
-    // If using mock data, just log the update that would happen
-    if (process.env.USE_MOCK_DATA === 'true') {
-      console.log(`Mock data mode: Would update task ${taskId} status to ${kanbanStatus}`);
-      return true;
-    }
-    
     const sheets = await getGoogleSheetsClient();
-    
-    // If sheets is null (mock data), return as if successful
     if (!sheets) {
-      return true;
+      throw new Error('Could not initialize Google Sheets client');
     }
     
     const sheetName = await getSheetInfo();
@@ -759,11 +720,8 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
     // Row index in the sheet (add 2 because data starts at row 2, and array is 0-indexed)
     const rowIndex = taskIndex + 2;
     
-    // Current date timestamp for lastModified
-    const lastModified = new Date().toISOString();
-    
     try {
-      // Update kanban status in column P (index 15)
+      // Update kanban status
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
         range: `${sheetName}!P${rowIndex}`,
@@ -773,18 +731,21 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
         },
       });
       
-      // Update lastModified timestamp in column Q (index 16)
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${sheetName}!Q${rowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [[lastModified]],
-        },
-      });
-      
-      // If status is set to "done", update the task status to "completed" in column O (index 14)
+      // If status is set to "done", update the resolved date and other fields
       if (kanbanStatus === 'done') {
+        const currentDate = new Date().toLocaleDateString();
+        
+        // Update resolved date
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${sheetName}!K${rowIndex}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [[currentDate]],
+          },
+        });
+        
+        // Update status to completed
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${sheetName}!O${rowIndex}`,
@@ -794,12 +755,10 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
           },
         });
         
-        // Get the current task to calculate the proper price based on type
+        // Update the cost based on hours invested
         const task = allTasks[taskIndex];
         if (task) {
-          const cost = task.type === 'bug' ? 200 : 300;
-          
-          // Update the cost in column N (index 13)
+          const cost = determineCost(task.type, task.hoursInvested);
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
             range: `${sheetName}!N${rowIndex}`,
@@ -808,26 +767,42 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
               values: [[cost]],
             },
           });
-          
-          console.log(`Updated task ${taskId} to status ${kanbanStatus} and set cost to ${cost}`);
         }
       } else {
-        console.log(`Updated task ${taskId} to status ${kanbanStatus}`);
+        // If moving away from done, clear the resolved date and set status back to pending
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${sheetName}!K${rowIndex}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['']],
+          },
+        });
+        
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${sheetName}!O${rowIndex}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: {
+            values: [['pending']],
+          },
+        });
       }
+      return true;
     } catch (updateError) {
-      console.error('Error updating specific task fields:', updateError);
+      console.error('Error updating task fields:', updateError);
       return false;
     }
-    
-    return true;
   } catch (error) {
     console.error('Error updating task status:', error);
-    
-    // If error but in development with mock data enabled, pretend it worked
-    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
-      return true;
-    }
-    
     return false;
   }
+}
+
+// Add time tracking helper
+function calculateTimeSpent(startTime: string, endTime: string): number {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const diffHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  return Math.round(diffHours * 10) / 10; // Round to 1 decimal place
 } 

@@ -33,18 +33,36 @@ export function KanbanBoard({
     
     // Map the 4-column model to the 3-column model
     if (status === 'todo') {
-      filteredTasks = tasks.filter(task => task.kanbanStatus === 'todo');
-    } else if (status === 'doing') {
-      // Combine in-progress and review into "doing"
+      // Only show tasks that are not resolved and in todo status
       filteredTasks = tasks.filter(task => 
-        task.kanbanStatus === 'in-progress' || task.kanbanStatus === 'review'
+        !task.resolvedOn && 
+        task.status === 'pending' && 
+        task.kanbanStatus === 'todo'
       );
-    } else {
-      filteredTasks = tasks.filter(task => task.kanbanStatus === 'done');
+    } else if (status === 'doing') {
+      // Only show tasks that are not resolved and in progress
+      filteredTasks = tasks.filter(task => 
+        !task.resolvedOn && 
+        task.status === 'pending' && 
+        (task.kanbanStatus === 'in-progress' || task.kanbanStatus === 'review')
+      );
+    } else { // done
+      // Show all resolved tasks
+      filteredTasks = tasks.filter(task => 
+        task.resolvedOn || 
+        task.status === 'completed' || 
+        task.kanbanStatus === 'done'
+      );
     }
     
     // Sort tasks: priority to tasks with "logo" in description
     return filteredTasks.sort((a, b) => {
+      // For done column, sort by resolved date (most recent first)
+      if (status === 'done' && a.resolvedOn && b.resolvedOn) {
+        return new Date(b.resolvedOn).getTime() - new Date(a.resolvedOn).getTime();
+      }
+      
+      // Then sort by logo priority
       const aHasLogo = a.description?.toLowerCase().includes('logo') ?? false;
       const bHasLogo = b.description?.toLowerCase().includes('logo') ?? false;
       
@@ -112,9 +130,10 @@ export function KanbanBoard({
     if (currentColumn !== status) {
       // If moving to done, confirm with user as it will update the price
       if (status === 'done' && currentColumn !== 'done') {
-        const price = task.type === 'bug' ? 200 : 300;
+        const hourlyRate = task.type === 'bug' ? 200 : 300;
+        const price = hourlyRate * task.hoursInvested;
         const confirmed = window.confirm(
-          `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
+          `Moving this ${task.type} to Done will set its price to Rs${price} (${task.hoursInvested} hours × Rs${hourlyRate}/hr). Continue?`
         );
         if (!confirmed) {
           setDraggedTask(null);
@@ -268,6 +287,12 @@ export function KanbanBoard({
                 <span>Reported by: {task.reportedBy}</span>
                 <span>Cost: Rs{task.cost}</span>
               </div>
+              {task.kanbanStatus === 'done' && task.resolvedOn && (
+                <div className="flex justify-between items-center mt-1 text-green-600">
+                  <span>Resolved on:</span>
+                  <span>{task.resolvedOn}</span>
+                </div>
+              )}
             </div>
 
             {!readOnly && onStatusUpdate && column !== 'done' && (
@@ -280,9 +305,10 @@ export function KanbanBoard({
                     
                     // If moving to done, confirm with user as it will update the price
                     if (nextStatus === 'done') {
-                      const price = task.type === 'bug' ? 200 : 300;
+                      const hourlyRate = task.type === 'bug' ? 200 : 300;
+                      const price = hourlyRate * task.hoursInvested;
                       const confirmed = window.confirm(
-                        `Moving this ${task.type} to Done will set its price to Rs${price}. Continue?`
+                        `Moving this ${task.type} to Done will set its price to Rs${price} (${task.hoursInvested} hours × Rs${hourlyRate}/hr). Continue?`
                       );
                       if (!confirmed) return;
                     }

@@ -148,7 +148,7 @@ export function AddTaskForm({ onSubmit, isLoading = false }: AddTaskFormProps) {
               {...register('type')}
               className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Bug Fix (Rs200)</span>
+            <span className="ml-2 text-sm text-gray-700">Bug Fix (Rs200/hr)</span>
           </label>
           <label className="inline-flex items-center cursor-pointer">
             <input
@@ -158,7 +158,7 @@ export function AddTaskForm({ onSubmit, isLoading = false }: AddTaskFormProps) {
               {...register('type')}
               className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">New Feature (Rs300)</span>
+            <span className="ml-2 text-sm text-gray-700">New Feature (Rs300/hr)</span>
           </label>
         </div>
         {errors.type && (

@@ -6,133 +6,185 @@ import { formatDistanceToNow } from 'date-fns';
 interface TaskListProps {
   tasks: Task[];
   onUpdateHours?: (taskId: string, hours: number) => void;
+  onTimeUpdate?: (taskId: string, startTime?: string, endTime?: string) => void;
   developerMode?: boolean;
 }
 
-export function TaskList({ tasks, onUpdateHours, developerMode = false }: TaskListProps) {
+export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = false }: TaskListProps) {
   const [formattedDates, setFormattedDates] = useState<Record<string, string>>({});
+  const [activeTimer, setActiveTimer] = useState<string | null>(null);
+  const [timerStart, setTimerStart] = useState<string | null>(null);
 
-  // Move date formatting to client-side only
+  // Format relative dates
   useEffect(() => {
-    const dates: Record<string, string> = {};
+    const newDates: Record<string, string> = {};
     tasks.forEach(task => {
       if (task.timestamp) {
-        try {
-          dates[task.id] = formatDistanceToNow(new Date(task.timestamp), { addSuffix: true });
-        } catch {
-          // Silently handle date formatting errors
-          dates[task.id] = 'Unknown';
-        }
-      } else {
-        dates[task.id] = 'Unknown';
+        newDates[task.id] = formatDistanceToNow(new Date(task.timestamp), { addSuffix: true });
       }
     });
-    setFormattedDates(dates);
+    setFormattedDates(newDates);
   }, [tasks]);
 
+  const handleStartTimer = (taskId: string) => {
+    if (activeTimer) return;
+    setActiveTimer(taskId);
+    setTimerStart(new Date().toISOString());
+    onTimeUpdate?.(taskId, new Date().toISOString());
+  };
+
+  const handleStopTimer = (taskId: string) => {
+    if (activeTimer !== taskId || !timerStart) return;
+    setActiveTimer(null);
+    const endTime = new Date().toISOString();
+    onTimeUpdate?.(taskId, timerStart, endTime);
+    setTimerStart(null);
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {tasks.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No tasks found</p>
-      ) : (
-        tasks.map((task) => (
-          <Card key={task.id} className="hover:shadow-lg transition-shadow overflow-visible">
-            <div className="flex flex-col gap-4 sm:gap-6">
-              {/* Task Info */}
+    <div className="space-y-6">
+      {tasks.map((task) => (
+        <Card key={task.id} className="hover:shadow-lg transition-shadow duration-200 overflow-visible p-6">
+          <div className="flex flex-col gap-6">
+            {/* Task Header */}
+            <div className="flex justify-between items-start">
               <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">{task.description}</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                     task.type === 'bug' 
                       ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
+                      : 'bg-emerald-100 text-emerald-800'
                   }`}>
                     {task.type === 'bug' ? 'Bug' : 'Feature'}
                   </span>
                   {task.severity && (
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                       task.severity.toLowerCase().includes('high') || task.severity.toLowerCase().includes('urgent') 
                         ? 'bg-orange-100 text-orange-800' 
                         : task.severity.toLowerCase().includes('medium') 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-sky-100 text-sky-800'
                     }`}>
                       {task.severity}
                     </span>
                   )}
                   {task.bucket && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                       {task.bucket}
                     </span>
                   )}
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                     task.status === 'pending' 
-                      ? 'bg-yellow-100 text-yellow-800' 
-                      : 'bg-green-100 text-green-800'
+                      ? 'bg-amber-100 text-amber-800' 
+                      : 'bg-emerald-100 text-emerald-800'
                   }`}>
                     {task.status === 'pending' ? 'Pending' : 'Completed'}
                   </span>
                 </div>
-                
-                <h3 className="font-semibold text-base sm:text-lg text-gray-900 mb-2">{task.description}</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3 text-xs sm:text-sm text-gray-600">
-                  <div>
-                    <span className="font-medium text-gray-700">Reported By:</span> {task.reportedBy}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Email:</span> {task.emailAddress}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Date Reported:</span> {task.dateReported}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Month:</span> {task.month}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Developer:</span> {task.developer}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Hours:</span> {task.hoursInvested}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Cost:</span> Rs{task.cost}
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-700">Submitted:</span> {formattedDates[task.id] || 'Unknown'}
-                  </div>
-                </div>
-                
-                {task.screenshot && (
-                  <div className="mt-4">
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Screenshot:</h4>
-                    <a href={task.screenshot} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      View Screenshot
-                    </a>
-                  </div>
-                )}
               </div>
-              
-              {/* Update Hours Section */}
-              {developerMode && onUpdateHours && (
-                <div className="flex flex-col justify-center border-t pt-4 sm:border-t-0 sm:border-l sm:border-gray-200 sm:pl-6">
-                  <div className="text-center">
-                    <label htmlFor={`hours-${task.id}`} className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                      Update Hours
-                    </label>
-                    <div className="flex items-center justify-center">
+
+              {/* Time Tracking Controls - Moved to top right */}
+              {developerMode && (
+                <div className="flex items-center gap-3">
+                  {activeTimer === task.id ? (
+                    <button
+                      onClick={() => handleStopTimer(task.id)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 transition-colors duration-200"
+                    >
+                      Stop Timer
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleStartTimer(task.id)}
+                      disabled={!!activeTimer}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Start Timer
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Task Details Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Reported By</span>
+                <p className="text-sm text-gray-900">{task.reportedBy}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Email</span>
+                <p className="text-sm text-gray-900">{task.emailAddress}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Date Reported</span>
+                <p className="text-sm text-gray-900">{task.dateReported}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Month</span>
+                <p className="text-sm text-gray-900">{task.month}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Developer</span>
+                <p className="text-sm text-gray-900">{task.developer}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Hours Invested</span>
+                <p className="text-sm text-gray-900">{task.hoursInvested}h</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Cost</span>
+                <p className="text-sm text-gray-900">Rs{task.cost}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-gray-500">Submitted</span>
+                <p className="text-sm text-gray-900">{formattedDates[task.id] || 'Unknown'}</p>
+              </div>
+            </div>
+
+            {/* Screenshot Section */}
+            {task.screenshot && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Screenshot</h4>
+                <a 
+                  href={task.screenshot} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  View Screenshot
+                </a>
+              </div>
+            )}
+
+            {/* Time Tracking Section */}
+            {developerMode && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-medium text-gray-700">Time Tracking</h4>
+                    {task.timeSpent?.totalHours ? (
+                      <p className="text-sm text-gray-600">
+                        Total Time: <span className="font-medium">{task.timeSpent.totalHours}h</span>
+                      </p>
+                    ) : null}
+                  </div>
+                  
+                  {onUpdateHours && (
+                    <div className="flex items-center gap-2">
                       <input
                         id={`hours-${task.id}`}
                         type="number"
                         min="0"
                         step="0.5"
                         defaultValue={task.hoursInvested}
-                        className="block w-20 sm:w-24 rounded-l-md text-xs sm:text-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="block w-24 rounded-lg text-sm border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       />
                       <button
-                        type="button"
                         onClick={() => {
                           const input = document.getElementById(`hours-${task.id}`) as HTMLInputElement;
                           const hours = parseFloat(input.value);
@@ -140,18 +192,18 @@ export function TaskList({ tasks, onUpdateHours, developerMode = false }: TaskLi
                             onUpdateHours(task.id, hours);
                           }
                         }}
-                        className="inline-flex items-center px-2 sm:px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-blue-600 text-white text-xs sm:text-sm hover:bg-blue-700"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
                       >
-                        Update
+                        Update Hours
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </Card>
-        ))
-      )}
+              </div>
+            )}
+          </div>
+        </Card>
+      ))}
     </div>
   );
 } 

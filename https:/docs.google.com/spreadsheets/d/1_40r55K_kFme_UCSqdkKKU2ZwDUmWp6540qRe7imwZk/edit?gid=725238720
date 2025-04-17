@@ -1,0 +1,38 @@
+TIME & BUG ANALYSIS DASHBOARD
+
+1. CURRENT STATUS
+Total Bugs,=COUNTIFS(E2:E8, "Bug in exisiting solution")
+Resolved Bugs,=COUNTIFS(E2:E8, "Bug in exisiting solution", K2:K8, "<>")
+Resolution Rate,=CONCATENATE(COUNTIFS(E2:E8, "Bug in exisiting solution", K2:K8, "<>"), "/", COUNTIFS(E2:E8, "Bug in exisiting solution"))
+Pending Features,=COUNTIFS(E2:E8, "New Feature to be added")
+
+2. TIME METRICS
+Total Hours Invested,=SUMIFS(J2:J8, E2:E8, "Bug in exisiting solution")
+Average Time per Bug,=AVERAGEIFS(J2:J8, E2:E8, "Bug in exisiting solution", J2:J8, "<>")
+Website Time,=SUMIFS(J2:J8, H2:H8, "*Website*", E2:E8, "Bug in exisiting solution")
+App Time,=SUMIFS(J2:J8, H2:H8, "*IOS app*", E2:E8, "Bug in exisiting solution")
+
+3. SEVERITY ANALYSIS
+High Priority (4-5),=COUNTIFS(E2:E8, "Bug in exisiting solution", F2:F8, ">=4")
+Time on High Priority,=SUMIFS(J2:J8, E2:E8, "Bug in exisiting solution", F2:F8, ">=4")
+Unresolved High Priority,=COUNTIFS(E2:E8, "Bug in exisiting solution", F2:F8, ">=4", K2:K8, "")
+
+4. PLATFORM BREAKDOWN
+Website Bugs,=COUNTIFS(H2:H8, "*Website*", E2:E8, "Bug in exisiting solution")
+App Bugs,=COUNTIFS(H2:H8, "*IOS app*", E2:E8, "Bug in exisiting solution")
+Blog Related Issues,=COUNTIFS(I2:I8, "*blog*", E2:E8, "Bug in exisiting solution")
+
+5. REPORTER METRICS
+Tavishi Reports,=COUNTIFS(D2:D8, "Tavishi", E2:E8, "Bug in exisiting solution")
+Aadrita Reports,=COUNTIFS(D2:D8, "Aadrita", E2:E8, "Bug in exisiting solution")
+
+6. TIME EFFICIENCY
+Average Resolution Days,=IFERROR(AVERAGEIFS(K2:K8, E2:E8, "Bug in exisiting solution", K2:K8, "<>")-AVERAGEIFS(D2:D8, E2:E8, "Bug in exisiting solution", K2:K8, "<>"), "N/A")
+Longest Bug Fix (Hours),=MAX(IF(E2:E8="Bug in exisiting solution", J2:J8, 0))
+Tasks Without Time Entry,=COUNTIFS(E2:E8, "Bug in exisiting solution", J2:J8, "")
+
+7. CONDITIONAL FORMATTING RULES
+Apply to range A2:K8
+Rule 1: =AND(F2>=4, E2="Bug in exisiting solution", ISBLANK(K2)) // Format: Red Fill
+Rule 2: =AND(NOT(ISBLANK(K2)), ISBLANK(J2)) // Format: Yellow Fill
+Rule 3: =AND(E2="Bug in exisiting solution", F2>=4, NOT(ISBLANK(J2))) // Format: Orange Fill 
