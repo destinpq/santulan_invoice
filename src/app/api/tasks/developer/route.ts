@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTasksByDeveloper } from '@/lib/sheets';
 
+// Opt out of static generation for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
