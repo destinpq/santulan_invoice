@@ -147,22 +147,22 @@ export default function Home() {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Tasks"
-          value={loading ? 'Loading...' : tasks.length}
+          value={loading ? 'Loading...' : (tasks || []).length}
           description="All-time tasks"
         />
         <StatsCard
           title="Pending Money"
-          value={loading ? 'Loading...' : `Rs${pendingMoney}`}
+          value={loading ? 'Loading...' : `Rs${pendingMoney || 0}`}
           description="For incomplete tasks"
         />
         <StatsCard
           title="Total Hours Invested"
-          value={loading ? 'Loading...' : totalHours.toFixed(1)}
+          value={loading ? 'Loading...' : (totalHours || 0).toFixed(1)}
           description="Across all tasks"
         />
         <StatsCard
           title="Task Types"
-          value={loading ? 'Loading...' : `${tasks.filter(t => t.type === 'bug').length} Bugs / ${tasks.filter(t => t.type === 'feature').length} Features`}
+          value={loading ? 'Loading...' : `${(tasks || []).filter(t => t?.type === 'bug').length} Bugs / ${(tasks || []).filter(t => t?.type === 'feature').length} Features`}
           description="Distribution of work"
         />
       </div>
@@ -200,13 +200,8 @@ export default function Home() {
             >
               {showAddForm ? 'Cancel' : 'Add New Task'}
             </Button>
-            <Link href="/efficiency" className="flex-1 sm:flex-none">
-              <Button variant="outline" className="w-full text-sm">
-                Efficiency Analysis
-              </Button>
-            </Link>
             <Link href="/developer" className="flex-1 sm:flex-none">
-              <Button variant="secondary" className="w-full text-sm">
+              <Button className="w-full text-sm">
                 Developer Login
               </Button>
             </Link>
@@ -216,81 +211,37 @@ export default function Home() {
 
       {/* Add Task Form */}
       {showAddForm && (
-        <Card title="Add New Task">
+        <div className="bg-white p-6 rounded-lg shadow">
           <AddTaskForm onSubmit={handleAddTask} isLoading={addingTask} />
-        </Card>
+        </div>
       )}
 
-      {/* Tasks Display */}
-      <Card title={
-        viewMode === 'month' ? 'Tasks by Month' : 
-        viewMode === 'bucket' ? 'Tasks by Category' : 
-        'Kanban Board'
-      }>
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : viewMode === 'kanban' ? (
-          /* Display Kanban board */
-          <div className="py-4">
-            <div className="mb-4 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 text-center">
-              <p>
-                <strong>Developer Actions Required?</strong> Login as a developer to move tasks between columns.
-                <Link href="/developer" className="ml-2 underline font-medium">
-                  Developer Login
-                </Link>
-              </p>
+      {/* Task List or Kanban Board */}
+      {loading ? (
+        <div className="text-center py-10">
+          <p>Loading tasks...</p>
+        </div>
+      ) : (
+        <>
+          {viewMode === 'month' && Object.entries(tasksByMonth || {}).map(([month, monthTasks]) => (
+            <div key={month} className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">{month}</h2>
+              <TaskList tasks={monthTasks || []} />
             </div>
-            <KanbanBoard tasks={tasks} readOnly={true} />
-          </div>
-        ) : viewMode === 'month' ? (
-          /* Display tasks by month */
-          Object.keys(tasksByMonth).length === 0 ? (
-            <p className="text-center py-8 text-gray-500">No tasks found. Add your first task to get started!</p>
-          ) : (
-            <div className="space-y-8">
-              {Object.entries(tasksByMonth)
-                .sort(([monthA], [monthB]) => {
-                  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                  return months.indexOf(monthA) - months.indexOf(monthB);
-                })
-                .map(([month, monthTasks]) => (
-                  <div key={month} className="border-b pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">{month}</h3>
-                      <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                        {monthTasks.length} task{monthTasks.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <TaskList tasks={monthTasks} />
-                  </div>
-                ))}
+          ))}
+          
+          {viewMode === 'bucket' && Object.entries(tasksByBucket || {}).map(([bucket, bucketTasks]) => (
+            <div key={bucket} className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">{bucket}</h2>
+              <TaskList tasks={bucketTasks || []} />
             </div>
-          )
-        ) : (
-          /* Display tasks by bucket/category */
-          Object.keys(tasksByBucket).length === 0 ? (
-            <p className="text-center py-8 text-gray-500">No tasks found. Add your first task to get started!</p>
-          ) : (
-            <div className="space-y-8">
-              {Object.entries(tasksByBucket)
-                .sort(([bucketA], [bucketB]) => bucketA.localeCompare(bucketB))
-                .map(([bucket, bucketTasks]) => (
-                  <div key={bucket} className="border-b pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-xl font-semibold text-gray-800">{bucket || 'Uncategorized'}</h3>
-                      <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                        {bucketTasks.length} task{bucketTasks.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <TaskList tasks={bucketTasks} />
-                  </div>
-                ))}
-            </div>
-          )
-        )}
-      </Card>
+          ))}
+          
+          {viewMode === 'kanban' && (
+            <KanbanBoard tasks={tasks || []} />
+          )}
+        </>
+      )}
     </div>
   );
 }
