@@ -1,15 +1,47 @@
 # Invoice Tracker
 
-A Next.js application for tracking development tasks, hours invested, and costs. This application uses Google Sheets as a backend database.
+A Next.js application for tracking invoices and managing tasks. This application helps in monitoring time spent on tasks, managing project costs, and tracking development progress.
 
 ## Features
 
-- View tasks organized by month or category/bucket
-- Different costs for bug fixes (Rs200) and new features (Rs300)
-- Track tasks with detailed information including reporter, severity, screenshots, and more
-- Developer portal for updating hours on assigned tasks
-- Dashboard with key metrics (total tasks, pending money, hours invested)
-- Modern UI with responsive design
+- Task management with time tracking
+- Invoice generation and tracking
+- Developer efficiency analysis
+- Google Sheets integration for data storage
+- Modern UI with Tailwind CSS
+
+## Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/destinpq/santulan_invoice.git
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+Create a `.env.local` file with the following:
+```
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account-email
+GOOGLE_PRIVATE_KEY=your-private-key
+SPREADSHEET_ID=your-spreadsheet-id
+```
+
+4. Run the development server:
+```bash
+npm run dev
+```
+
+## Technologies Used
+
+- Next.js 14
+- React 18
+- TypeScript
+- Tailwind CSS
+- Google Sheets API
 
 ## Prerequisites
 
@@ -17,48 +49,6 @@ A Next.js application for tracking development tasks, hours invested, and costs.
 - npm or yarn
 - A Google Cloud Platform account with Google Sheets API enabled
 - A service account with access to Google Sheets API
-
-## Setup
-
-1. Clone the repository
-```bash
-git clone <repository-url>
-cd invoice-tracker
-```
-
-2. Install dependencies
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Set up Google Sheets
-
-You'll need to:
-- Create a new Google Sheet with a sheet named "Tasks" and the following headers in row 1:
-  - ID, Timestamp, EmailAddress, DateReported, ReportedBy, Type, Severity, Screenshot, Bucket, Description, Month, Developer, HoursInvested, Cost, Status
-- Create a service account in Google Cloud Console and download the JSON credentials
-- Share your Google Sheet with the email address of your service account (with Editor permissions)
-
-4. Set up environment variables
-
-Create a `.env.local` file in the root directory with the following variables:
-```
-GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account-email@your-project-id.iam.gserviceaccount.com
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=yoursecretkey123
-```
-
-5. Run the development server
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Usage
 
