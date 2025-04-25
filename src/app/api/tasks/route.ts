@@ -34,20 +34,12 @@ export async function GET(request: NextRequest) {
     const tasks = await getAllTasks();
     return NextResponse.json(tasks || []);
   } catch (error) {
-    console.error('Error in tasks API:', error);
-    // Return empty array/object based on the request type
-    const groupBy = new URL(request.url).searchParams.get('groupBy');
-    const stats = new URL(request.url).searchParams.get('stats');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching tasks';
+    console.error('Error in tasks API:', errorMessage, error);
     
-    if (groupBy === 'month' || groupBy === 'bucket') {
-      return NextResponse.json({});
-    }
-    if (stats === 'pending') {
-      return NextResponse.json({ pendingMoney: 0 });
-    }
-    if (stats === 'hours') {
-      return NextResponse.json({ totalHours: 0 });
-    }
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { message: `Failed to fetch tasks: ${errorMessage}` }, 
+      { status: 500 }
+    );
   }
 } 

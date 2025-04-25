@@ -31,66 +31,16 @@ export interface Task {
   daysUntilDeadline?: number;
 }
 
-// Mock data for when Google Sheets API is not available
-const MOCK_TASKS: Task[] = [
-  {
-    id: '1',
-    timestamp: new Date().toISOString(),
-    emailAddress: 'test@example.com',
-    dateReported: '2023-01-15',
-    reportedBy: 'Test User',
-    type: 'bug',
-    severity: 'High',
-    bucket: 'Frontend',
-    description: 'Sample bug report description',
-    month: 'January',
-    developer: 'destinpq',
-    hoursInvested: 3.5,
-    cost: 700,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 3.5,
-      lastUpdated: new Date().toISOString()
-    },
-    kanbanStatus: 'in-progress'
-  },
-  {
-    id: '2',
-    timestamp: new Date().toISOString(),
-    emailAddress: 'client@example.com',
-    dateReported: '2023-02-20',
-    reportedBy: 'Client',
-    type: 'feature',
-    severity: 'Medium',
-    bucket: 'Backend',
-    description: 'Sample feature request description',
-    month: 'February',
-    developer: 'destinpq',
-    hoursInvested: 8,
-    cost: 2400,
-    status: 'completed',
-    resolvedOn: '2023-03-01',
-    timeSpent: {
-      totalHours: 8,
-      lastUpdated: '2023-03-01'
-    },
-    kanbanStatus: 'done'
-  }
-];
-
 // Get the spreadsheet ID from env
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_40r55K_kFme_UCSqdkKKU2ZwDUmWp6540qRe7imwZk';
 // This will be populated after we get the sheet info
 let SHEET_NAME = '';
 
-// Check if we should use mock data
-const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
-
 // Function to initialize Google Sheets client
 async function getGoogleSheetsClient() {
-  // Skip API calls during build process or if mock data is enabled
-  if (process.env.SKIP_API_CALLS_DURING_BUILD === "true" || USE_MOCK_DATA) {
-    console.log(USE_MOCK_DATA ? 'Using mock data instead of Google Sheets API' : 'Skipping Google Sheets API call during build');
+  // Skip API calls during build process
+  if (process.env.SKIP_API_CALLS_DURING_BUILD === "true") {
+    console.log('Skipping Google Sheets API call during build');
     throw new Error('Google Sheets API calls skipped');
   }
 
@@ -189,12 +139,6 @@ async function getSheetInfo() {
 
 // Get all tasks from the spreadsheet
 export async function getAllTasks(): Promise<Task[]> {
-  // Use mock data if enabled
-  if (USE_MOCK_DATA) {
-    console.log('Using mock task data');
-    return [...MOCK_TASKS];
-  }
-
   try {
     const sheets = await getGoogleSheetsClient();
     
@@ -312,15 +256,9 @@ export async function getAllTasks(): Promise<Task[]> {
     console.error('Error fetching or processing tasks in getAllTasks:', error);
     console.error('Error details:', JSON.stringify(error, null, 2)); // Log full error details
     
-    // Fall back to mock data if API call fails
-    if (error.message.includes('Missing Google API credentials') || 
-        error.message.includes('Google Sheets API calls skipped')) {
-      console.log('Falling back to mock data');
-      return [...MOCK_TASKS];
-    }
-    
-    // Throw but with informative message
-    throw new Error(`Error fetching tasks: ${error.message || 'Unknown error'}`);
+    // Re-throw the error or return empty array if preferred
+    // throw error; // Option 1: Let the API route handle it
+    return []; // Option 2: Return empty array on error
   }
 }
 
@@ -361,22 +299,6 @@ function determineMonth(dateString: string): string {
 
 // Add a new task to the spreadsheet
 export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean> {
-  // Handle mock data
-  if (USE_MOCK_DATA) {
-    const id = Date.now().toString();
-    const cost = determineCost(task.type, task.hoursInvested);
-    
-    const newTask: Task = {
-      ...task,
-      id,
-      timestamp: new Date().toISOString(),
-      cost,
-    };
-    
-    MOCK_TASKS.push(newTask);
-    return true;
-  }
-
   try {
     const sheets = await getGoogleSheetsClient();
     const sheetName = await getSheetInfo();
@@ -421,37 +343,12 @@ export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean>
     return true;
   } catch (error) {
     console.error('Error adding task:', error);
-    
-    // Fall back to mock if API call fails due to credential issues
-    if (error instanceof Error && 
-        (error.message.includes('Missing Google API credentials') || 
-        error.message.includes('Google Sheets API calls skipped'))) {
-      
-      return addTask(task); // Will use the mock data path
-    }
-    
-    return false;
+    return false; // Indicate failure
   }
 }
 
 // Update task hours
 export async function updateTaskHours(taskId: string, hours: number): Promise<boolean> {
-  // Handle mock data
-  if (USE_MOCK_DATA) {
-    const taskIndex = MOCK_TASKS.findIndex(task => task.id === taskId);
-    if (taskIndex === -1) return false;
-    
-    MOCK_TASKS[taskIndex].hoursInvested = hours;
-    MOCK_TASKS[taskIndex].cost = determineCost(MOCK_TASKS[taskIndex].type, hours);
-    MOCK_TASKS[taskIndex].timeSpent = {
-      ...MOCK_TASKS[taskIndex].timeSpent,
-      totalHours: hours,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    return true;
-  }
-
   try {
     const sheets = await getGoogleSheetsClient();
     const sheetName = await getSheetInfo();
@@ -480,16 +377,7 @@ export async function updateTaskHours(taskId: string, hours: number): Promise<bo
     return true;
   } catch (error) {
     console.error('Error updating task hours:', error);
-    
-    // Fall back to mock if API call fails due to credential issues
-    if (error instanceof Error && 
-        (error.message.includes('Missing Google API credentials') || 
-        error.message.includes('Google Sheets API calls skipped'))) {
-      
-      return updateTaskHours(taskId, hours); // Will use the mock data path
-    }
-    
-    return false;
+    return false; // Indicate failure
   }
 }
 
@@ -573,28 +461,6 @@ export async function calculateTotalHours(): Promise<number> {
 
 // Update task status
 export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done'): Promise<boolean> {
-  // Handle mock data
-  if (USE_MOCK_DATA) {
-    const taskIndex = MOCK_TASKS.findIndex(task => task.id === taskId);
-    if (taskIndex === -1) return false;
-    
-    MOCK_TASKS[taskIndex].kanbanStatus = kanbanStatus;
-    
-    // If status is set to "done", update the resolved date and other fields
-    if (kanbanStatus === 'done') {
-      const currentDate = new Date().toLocaleDateString();
-      MOCK_TASKS[taskIndex].resolvedOn = currentDate;
-      MOCK_TASKS[taskIndex].status = 'completed';
-      MOCK_TASKS[taskIndex].cost = determineCost(MOCK_TASKS[taskIndex].type, MOCK_TASKS[taskIndex].hoursInvested);
-    } else {
-      // If moving away from done, clear the resolved date and set status back to pending
-      MOCK_TASKS[taskIndex].resolvedOn = undefined;
-      MOCK_TASKS[taskIndex].status = 'pending';
-    }
-    
-    return true;
-  }
-
   try {
     const sheets = await getGoogleSheetsClient();
     const sheetName = await getSheetInfo();
@@ -685,16 +551,7 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
     }
   } catch (error) {
     console.error('Error updating task status:', error);
-    
-    // Fall back to mock if API call fails due to credential issues
-    if (error instanceof Error && 
-        (error.message.includes('Missing Google API credentials') || 
-        error.message.includes('Google Sheets API calls skipped'))) {
-      
-      return updateTaskStatus(taskId, kanbanStatus); // Will use the mock data path
-    }
-    
-    return false;
+    return false; // Indicate failure
   }
 }
 
