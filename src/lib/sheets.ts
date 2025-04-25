@@ -194,15 +194,15 @@ export async function getAllTasks(): Promise<Task[]> {
         const id = `${timestamp}-${index}` || `generated-${index}`;
         
         const type = determineBugOrFeature(typeField);
-        
+      
         // Determine kanban status: Check explicit column P first, then column O, then resolvedOn
-        let kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done' = 'todo';
+      let kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done' = 'todo';
         if (devStatus === 'in-progress' || devStatus === 'review') {
             kanbanStatus = devStatus;
         } else if (kanbanBoardStatus === 'in-progress' || kanbanBoardStatus === 'review') {
             kanbanStatus = kanbanBoardStatus;
         } else if (devStatus === 'done' || kanbanBoardStatus === 'done' || resolvedOn) {
-            kanbanStatus = 'done';
+        kanbanStatus = 'done';
         }
 
         // Calculate days until deadline
@@ -216,35 +216,35 @@ export async function getAllTasks(): Promise<Task[]> {
             }
           } catch (parseError) {
             console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`);
-          }
         }
+      }
 
-        return {
-          id,
+      return {
+        id,
           timestamp: timestamp || new Date().toISOString(),
           emailAddress,
           dateReported,
           reportedBy,
-          type,
+        type,
           severity, // Or potentially map from priority (row[12])
           screenshot,
           bucket,
           description,
-          hoursInvested,
-          resolvedOn,
+        hoursInvested,
+        resolvedOn,
           month: determineMonth(dateReported || ''), // Determine month from Date Reported
           developer: devName, // Use Dev Name from sheet
           cost: determineCost(type, hoursInvested), // Calculate cost
           status: resolvedOn ? 'completed' : 'pending', // Determine status based on Resolved On
-          timeSpent: {
-            totalHours: hoursInvested,
-            lastUpdated: resolvedOn || new Date().toISOString()
-          },
+        timeSpent: {
+          totalHours: hoursInvested,
+          lastUpdated: resolvedOn || new Date().toISOString()
+        },
           kanbanStatus, // Use determined Kanban status
           estDeadline: estDeadlineString, // Keep the original string
           daysUntilDeadline, // Assign calculated days
           // lastModified: resolvedOn || '' // Removed, not in Task interface
-        };
+      };
       } catch (mapError: any) {
         console.error(`Error processing row ${index + 2}:`, mapError);
         console.error('Row data:', row);
