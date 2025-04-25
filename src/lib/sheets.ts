@@ -211,9 +211,24 @@ export async function getAllTasks(): Promise<Task[]> {
         kanbanStatus = 'done';
         }
 
+        // Log raw data for every task's key fields
+        console.log(`Task Debug - ${index+2}: ${description.substring(0, 30)}...`);
+        console.log(`- resolvedOn: "${resolvedOn}" (${typeof resolvedOn})`);
+        console.log(`- Deadline: "${estDeadlineString}" (${typeof estDeadlineString})`);
+        console.log(`- Status: kanban=${kanbanStatus}, Bucket: ${bucket}`);
+
         // Calculate days until deadline
         let daysUntilDeadline: number | undefined = undefined;
-        if (estDeadlineString) {
+        
+        // If the task is resolved, consider deadline as met
+        // Make this check more comprehensive and log extensively for debugging
+        if (resolvedOn && resolvedOn.trim() !== '') {
+          // Use 100 as a special value to indicate "Deadline Met" for resolved tasks
+          daysUntilDeadline = 100;
+          console.log(`✅ Task "${description}" is resolved (${resolvedOn}), marking deadline as met`);
+        } 
+        // Otherwise calculate days normally if estDeadlineString exists
+        else if (estDeadlineString) {
           // Log the raw deadline string first
           console.log(`Processing deadline string: "${estDeadlineString}" for task "${description}"`);
           
@@ -297,7 +312,8 @@ export async function getAllTasks(): Promise<Task[]> {
         },
           kanbanStatus, // Use determined Kanban status
           estDeadline: estDeadlineString, // Keep the original string
-          daysUntilDeadline, // Assign calculated days
+          // FORCE any done/resolved tasks to have deadline met
+          daysUntilDeadline: (kanbanStatus === 'done' || resolvedOn) ? 100 : daysUntilDeadline, 
           // lastModified: resolvedOn || '' // Removed, not in Task interface
       };
       } catch (mapError: any) {

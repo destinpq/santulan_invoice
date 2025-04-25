@@ -316,7 +316,10 @@ export function KanbanBoard({
             <div className="mb-2 bg-gray-100 rounded-md p-2">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-bold uppercase tracking-wider">Countdown</span>
-                {task.daysUntilDeadline !== undefined ? (
+                {/* FORCE "DEADLINE MET" for ALL tasks in the Done column */}
+                {column === 'done' || task.kanbanStatus === 'done' || task.resolvedOn ? (
+                  <span className="text-xs font-bold text-green-600">DEADLINE MET ✓</span>
+                ) : task.daysUntilDeadline !== undefined ? (
                   <span className={`text-xs font-bold ${
                     task.daysUntilDeadline < 0 ? 'text-red-600' : 
                     task.daysUntilDeadline < 3 ? 'text-orange-600' : 'text-green-600'
@@ -334,13 +337,15 @@ export function KanbanBoard({
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
                   className={`h-2.5 rounded-full ${
+                    column === 'done' || task.kanbanStatus === 'done' || task.resolvedOn ? 'bg-green-600' : 
                     !task.daysUntilDeadline ? 'bg-gray-400' :
                     task.daysUntilDeadline < 0 ? 'bg-red-600' : 
                     task.daysUntilDeadline < 3 ? 'bg-orange-500' : 
                     task.daysUntilDeadline < 7 ? 'bg-green-500' : 'bg-blue-500'
                   }`} 
                   style={{ 
-                    width: !task.daysUntilDeadline ? '10%' :
+                    width: column === 'done' || task.kanbanStatus === 'done' || task.resolvedOn ? '100%' : 
+                      !task.daysUntilDeadline ? '10%' :
                       task.daysUntilDeadline < 0 ? '100%' : 
                       task.daysUntilDeadline > 14 ? '10%' :
                       Math.max(0, 100 - (task.daysUntilDeadline / 14 * 100)) + '%'
