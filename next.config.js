@@ -19,8 +19,8 @@ const nextConfig = {
   // Note: We are NOT exposing the API key to the client
   env: {
     APP_ENV: process.env.NODE_ENV,
-    USE_MOCK_DATA: process.env.USE_MOCK_DATA || 'false',
-    SKIP_API_CALLS_DURING_BUILD: process.env.NODE_ENV === "production" ? "true" : "false",
+    // Always set SKIP_API_CALLS_DURING_BUILD to false regardless of environment
+    SKIP_API_CALLS_DURING_BUILD: "false",
   },
   // Don't fail the build when external APIs can't be reached
   onDemandEntries: {

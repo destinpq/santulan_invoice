@@ -312,6 +312,43 @@ export function KanbanBoard({
                 : task.description || 'No description'}
             </h4>
             
+            {/* Visual countdown display - ALWAYS show for every task */}
+            <div className="mb-2 bg-gray-100 rounded-md p-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold uppercase tracking-wider">Countdown</span>
+                {task.daysUntilDeadline !== undefined ? (
+                  <span className={`text-xs font-bold ${
+                    task.daysUntilDeadline < 0 ? 'text-red-600' : 
+                    task.daysUntilDeadline < 3 ? 'text-orange-600' : 'text-green-600'
+                  }`}>
+                    {task.daysUntilDeadline < 0 
+                      ? `${Math.abs(task.daysUntilDeadline)} DAYS OVERDUE` 
+                      : task.daysUntilDeadline === 0 
+                        ? 'DUE TODAY' 
+                        : `${task.daysUntilDeadline} DAYS LEFT`}
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-gray-600">NO DEADLINE SET</span>
+                )}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className={`h-2.5 rounded-full ${
+                    !task.daysUntilDeadline ? 'bg-gray-400' :
+                    task.daysUntilDeadline < 0 ? 'bg-red-600' : 
+                    task.daysUntilDeadline < 3 ? 'bg-orange-500' : 
+                    task.daysUntilDeadline < 7 ? 'bg-green-500' : 'bg-blue-500'
+                  }`} 
+                  style={{ 
+                    width: !task.daysUntilDeadline ? '10%' :
+                      task.daysUntilDeadline < 0 ? '100%' : 
+                      task.daysUntilDeadline > 14 ? '10%' :
+                      Math.max(0, 100 - (task.daysUntilDeadline / 14 * 100)) + '%'
+                  }}
+                ></div>
+              </div>
+            </div>
+            
             <div className="text-xs text-gray-600 mb-3">
               <div className="flex justify-between items-center">
                 <span className="font-medium text-indigo-700">Developer: {task.developer}</span>

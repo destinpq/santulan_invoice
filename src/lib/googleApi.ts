@@ -8,11 +8,9 @@
  * This ensures consistency between different files accessing Google APIs
  */
 export function shouldSkipApiCalls() {
-  // Log the value for debugging
-  console.log('SKIP_API_CALLS_DURING_BUILD in googleApi.ts:', process.env.SKIP_API_CALLS_DURING_BUILD);
-  
-  // Only skip if explicitly set to "true" string
-  return process.env.SKIP_API_CALLS_DURING_BUILD === "true";
+  // Always return false - never skip API calls regardless of environment variable
+  console.log('SKIP_API_CALLS_DURING_BUILD check bypassed - always using real API');
+  return false;
 }
 
 /**
@@ -20,11 +18,7 @@ export function shouldSkipApiCalls() {
  * This ensures the key is never exposed in client-side code
  */
 export function getGoogleApiKey() {
-  // Check if API calls should be skipped first
-  if (shouldSkipApiCalls()) {
-    throw new Error('Google API calls skipped');
-  }
-  
+  // No need to check if API calls should be skipped
   const apiKey = process.env.GOOGLE_API_KEY;
   
   if (!apiKey) {

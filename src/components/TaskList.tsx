@@ -97,7 +97,7 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                           ? 'Due today!'
                           : task.daysUntilDeadline === 1
                             ? 'Due tomorrow'
-                            : `${task.daysUntilDeadline} days left`}
+                        : `${task.daysUntilDeadline} days left`}
                     </span>
                   )}
                 </div>
@@ -182,7 +182,7 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                         ? 'Due today!'
                         : task.daysUntilDeadline === 1
                           ? 'Due tomorrow'
-                          : `${task.daysUntilDeadline} days left`}
+                      : `${task.daysUntilDeadline} days left`}
                   </p>
                 </div>
               )}

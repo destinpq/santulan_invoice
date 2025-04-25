@@ -1,7 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { differenceInDays, parse } from 'date-fns';
-import { shouldSkipApiCalls } from './googleApi';
 
 // Define types for our data
 export interface Task {
@@ -39,14 +38,8 @@ let SHEET_NAME = '';
 
 // Function to initialize Google Sheets client
 async function getGoogleSheetsClient() {
-  // Add debug log to see the actual value
-  console.log('SKIP_API_CALLS_DURING_BUILD value in sheets.ts:', process.env.SKIP_API_CALLS_DURING_BUILD);
-  
-  // Use the centralized function to check if API calls should be skipped
-  if (shouldSkipApiCalls()) {
-    console.log('Skipping Google Sheets API call during build');
-    throw new Error('Google Sheets API calls skipped');
-  }
+  // Always use real API data, no environment variable checks
+  console.log('Always using real Google Sheets API - all environment checks bypassed');
 
   try {
     let authClient;
@@ -192,7 +185,16 @@ export async function getAllTasks(): Promise<Task[]> {
         const devName = row[13] || 'destinpq'; // Column N: Dev name (Map to developer field)
         const kanbanBoardStatus = (row[14] || '').toLowerCase(); // Column O: Kanban Board status
         const devStatus = (row[15] || '').toLowerCase(); // Column P: Dev status (Use this for explicit kanban status)
-        const estDeadlineString = row[16] || ''; // Column Q: Est Deadline
+        const estDeadlineString = row[11] || ''; // Column L: Est Deadline - FIXED FROM COLUMN 16 to 11
+
+        // Add extra debugging for all data from the sheet
+        console.log(`Row ${index + 2} data:`, {
+          id: index,
+          description: description.substring(0, 30) + '...',
+          estDeadlineString,
+          rowLength: row.length,
+          allColumns: row.map((cell, i) => `Col ${i}: ${cell ? cell.toString().substring(0, 20) : 'empty'}`).join(' | ')
+        });
 
         // Generate a unique ID - Using timestamp + index might be better than just timestamp
         const id = `${timestamp}-${index}` || `generated-${index}`;
@@ -212,28 +214,62 @@ export async function getAllTasks(): Promise<Task[]> {
         // Calculate days until deadline
         let daysUntilDeadline: number | undefined = undefined;
         if (estDeadlineString) {
+          // Log the raw deadline string first
+          console.log(`Processing deadline string: "${estDeadlineString}" for task "${description}"`);
+          
           try {
-            // Update format to match mm/dd/yyyy with leading zeros
-            const deadlineDate = parse(estDeadlineString, 'MM/dd/yyyy', new Date()); 
+            // First try MM/DD/YYYY format (your standard format with or without leading zeros)
+            // This format matches dates like 4/4/2025 or 04/04/2025
+            const deadlineDate = parse(estDeadlineString, 'M/d/yyyy', new Date());
+            
             if (!isNaN(deadlineDate.getTime())) {
               daysUntilDeadline = differenceInDays(deadlineDate, new Date());
-              console.log(`Parsed deadline for task "${description}": ${estDeadlineString} -> ${daysUntilDeadline} days remaining`);
+              console.log(`✅ Successfully parsed deadline for task "${description}": ${estDeadlineString} -> ${daysUntilDeadline} days remaining`);
             } else {
-              console.warn(`Invalid date format for task "${description}": ${estDeadlineString}`);
+              throw new Error('Invalid date - first parsing attempt failed');
             }
           } catch (parseError) {
-            console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`, parseError);
+            console.warn(`First parsing attempt failed for "${estDeadlineString}"`);
             
-            // Try alternative date formats as fallback
-            try {
-              // Try M/d/yyyy format (without leading zeros)
-              const altDeadlineDate = parse(estDeadlineString, 'M/d/yyyy', new Date());
-              if (!isNaN(altDeadlineDate.getTime())) {
-                daysUntilDeadline = differenceInDays(altDeadlineDate, new Date());
-                console.log(`Parsed deadline using alternative format for task "${description}": ${estDeadlineString} -> ${daysUntilDeadline} days remaining`);
+            // Try different format combinations as fallbacks
+            const formatAttempts = [
+              'MM/dd/yyyy', // 04/04/2025
+              'd/M/yyyy',   // 4/4/2025
+              'yyyy/MM/dd', // 2025/04/04
+              'yyyy-MM-dd', // 2025-04-04
+              'dd-MM-yyyy', // 04-04-2025
+              'dd.MM.yyyy'  // 04.04.2025
+            ];
+            
+            let parsed = false;
+            
+            for (const format of formatAttempts) {
+              try {
+                const attemptDate = parse(estDeadlineString, format, new Date());
+                if (!isNaN(attemptDate.getTime())) {
+                  daysUntilDeadline = differenceInDays(attemptDate, new Date());
+                  console.log(`✅ Parsed deadline using format ${format} for task "${description}": ${daysUntilDeadline} days remaining`);
+                  parsed = true;
+                  break;
+                }
+              } catch (err) {
+                // Continue to next format
               }
-            } catch (altParseError) {
-              console.error(`All parsing attempts failed for deadline: ${estDeadlineString}`);
+            }
+            
+            // If all parsing attempts failed, try creating a date directly
+            if (!parsed) {
+              try {
+                const directDate = new Date(estDeadlineString);
+                if (!isNaN(directDate.getTime())) {
+                  daysUntilDeadline = differenceInDays(directDate, new Date());
+                  console.log(`✅ Parsed deadline using direct Date constructor for task "${description}": ${daysUntilDeadline} days remaining`);
+                } else {
+                  console.error(`❌ All parsing attempts failed for deadline: "${estDeadlineString}"`);
+                }
+              } catch (finalError) {
+                console.error(`❌ Failed to parse date "${estDeadlineString}" with any method:`, finalError);
+              }
             }
           }
         }
@@ -404,7 +440,7 @@ export async function updateTaskHours(taskId: string, hours: number): Promise<bo
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getTasksByDeveloper(developerKey: string): Promise<Task[]> {
   try {
-    const allTasks = await getAllTasks(); // This already handles mock data
+    const allTasks = await getAllTasks();
     return allTasks; // Return all tasks instead of filtering by developer
   } catch (error) {
     console.error('Error getting tasks:', error);
@@ -415,7 +451,7 @@ export async function getTasksByDeveloper(developerKey: string): Promise<Task[]>
 // Get tasks grouped by month
 export async function getTasksByMonth(): Promise<Record<string, Task[]>> {
   try {
-    const allTasks = await getAllTasks(); // This already handles mock data
+    const allTasks = await getAllTasks();
     return allTasks.reduce((acc, task) => {
       if (!acc[task.month]) {
         acc[task.month] = [];
@@ -432,7 +468,7 @@ export async function getTasksByMonth(): Promise<Record<string, Task[]>> {
 // Get tasks grouped by bucket
 export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
   try {
-    const allTasks = await getAllTasks(); // This already handles mock data
+    const allTasks = await getAllTasks();
     return allTasks.reduce((acc, task) => {
       if (!acc[task.bucket]) {
         acc[task.bucket] = [];
@@ -449,7 +485,7 @@ export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
 // Calculate pending money
 export async function calculatePendingMoney(): Promise<number> {
   try {
-    const allTasks = await getAllTasks(); // This already handles mock data
+    const allTasks = await getAllTasks();
     console.log('Calculating pending money for all tasks...');
     
     const total = allTasks.reduce((total, task) => {
@@ -470,7 +506,7 @@ export async function calculatePendingMoney(): Promise<number> {
 // Calculate total time invested
 export async function calculateTotalHours(): Promise<number> {
   try {
-    const allTasks = await getAllTasks(); // This already handles mock data
+    const allTasks = await getAllTasks();
     return allTasks.reduce((total, task) => total + task.hoursInvested, 0);
   } catch (error) {
     console.error('Error calculating total hours:', error);

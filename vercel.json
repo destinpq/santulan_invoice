@@ -9,5 +9,8 @@
       "src": "next.config.js",
       "use": "@vercel/next"
     }
-  ]
+  ],
+  "env": {
+    "SKIP_API_CALLS_DURING_BUILD": "false"
+  }
 } 
