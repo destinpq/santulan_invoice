@@ -297,7 +297,11 @@ export function KanbanBoard({
                 }`}>
                   {task.daysUntilDeadline < 0
                     ? `Overdue by ${Math.abs(task.daysUntilDeadline)}d`
-                    : `${task.daysUntilDeadline}d left`}
+                    : task.daysUntilDeadline === 0
+                      ? 'Due today!'
+                      : task.daysUntilDeadline === 1
+                        ? 'Due tomorrow'
+                        : `${task.daysUntilDeadline}d left`}
                 </span>
               )}
             </div>
@@ -341,7 +345,11 @@ export function KanbanBoard({
                   }`}>
                     {task.daysUntilDeadline < 0
                       ? `${Math.abs(task.daysUntilDeadline)} days overdue`
-                      : `${task.daysUntilDeadline} days left`}
+                      : task.daysUntilDeadline === 0
+                        ? 'Due today!'
+                        : task.daysUntilDeadline === 1
+                          ? 'Due tomorrow'
+                          : `${task.daysUntilDeadline} days left`}
                   </span>
                 </div>
               )}

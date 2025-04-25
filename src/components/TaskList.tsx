@@ -93,7 +93,11 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                     }`}>
                       {task.daysUntilDeadline < 0
                         ? `Overdue by ${Math.abs(task.daysUntilDeadline)} days`
-                        : `${task.daysUntilDeadline} days left`}
+                        : task.daysUntilDeadline === 0
+                          ? 'Due today!'
+                          : task.daysUntilDeadline === 1
+                            ? 'Due tomorrow'
+                            : `${task.daysUntilDeadline} days left`}
                     </span>
                   )}
                 </div>
@@ -174,7 +178,11 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                   }`}>
                     {task.daysUntilDeadline < 0
                       ? `${Math.abs(task.daysUntilDeadline)} days overdue`
-                      : `${task.daysUntilDeadline} days left`}
+                      : task.daysUntilDeadline === 0
+                        ? 'Due today!'
+                        : task.daysUntilDeadline === 1
+                          ? 'Due tomorrow'
+                          : `${task.daysUntilDeadline} days left`}
                   </p>
                 </div>
               )}

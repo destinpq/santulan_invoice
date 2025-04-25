@@ -216,8 +216,8 @@ export async function getAllTasks(): Promise<Task[]> {
             }
           } catch (parseError) {
             console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`);
+          }
         }
-      }
 
       return {
         id,
