@@ -287,6 +287,19 @@ export function KanbanBoard({
                   {task.severity}
                 </span>
               )}
+              {task.daysUntilDeadline !== undefined && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  task.daysUntilDeadline < 0
+                    ? 'bg-red-100 text-red-800'
+                    : task.daysUntilDeadline < 3
+                      ? 'bg-orange-100 text-orange-800'
+                      : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {task.daysUntilDeadline < 0
+                    ? `Overdue by ${Math.abs(task.daysUntilDeadline)}d`
+                    : `${task.daysUntilDeadline}d left`}
+                </span>
+              )}
             </div>
             
             <h4 className="font-medium text-sm text-gray-800 mb-2" title={task.description}>
@@ -308,6 +321,28 @@ export function KanbanBoard({
                 <div className="flex justify-between items-center mt-1 text-green-600">
                   <span>Resolved on:</span>
                   <span className="font-medium">{task.resolvedOn}</span>
+                </div>
+              )}
+              {task.estDeadline && (
+                <div className="flex justify-between items-center mt-1">
+                  <span>Deadline:</span>
+                  <span className="font-medium">{task.estDeadline}</span>
+                </div>
+              )}
+              {task.daysUntilDeadline !== undefined && (
+                <div className="flex justify-between items-center mt-1">
+                  <span>Time left:</span>
+                  <span className={`font-medium ${
+                    task.daysUntilDeadline < 0
+                      ? 'text-red-600'
+                      : task.daysUntilDeadline < 3
+                        ? 'text-orange-600'
+                        : 'text-gray-700'
+                  }`}>
+                    {task.daysUntilDeadline < 0
+                      ? `${Math.abs(task.daysUntilDeadline)} days overdue`
+                      : `${task.daysUntilDeadline} days left`}
+                  </span>
                 </div>
               )}
             </div>

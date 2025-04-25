@@ -81,6 +81,21 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                   }`}>
                     {task.status === 'pending' ? 'Pending' : 'Completed'}
                   </span>
+                  
+                  {/* Display days until deadline if available */}
+                  {task.daysUntilDeadline !== undefined && (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                      task.daysUntilDeadline < 0
+                        ? 'bg-red-100 text-red-800'
+                        : task.daysUntilDeadline < 3
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {task.daysUntilDeadline < 0
+                        ? `Overdue by ${Math.abs(task.daysUntilDeadline)} days`
+                        : `${task.daysUntilDeadline} days left`}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -141,27 +156,44 @@ export function TaskList({ tasks, onUpdateHours, onTimeUpdate, developerMode = f
                 <span className="text-sm font-medium text-gray-500">Submitted</span>
                 <p className="text-sm text-gray-900">{formattedDates[task.id] || 'Unknown'}</p>
               </div>
+              {task.estDeadline && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-gray-500">Deadline</span>
+                  <p className="text-sm text-gray-900">{task.estDeadline}</p>
+                </div>
+              )}
+              {task.daysUntilDeadline !== undefined && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium text-gray-500">Time Left</span>
+                  <p className={`text-sm font-medium ${
+                    task.daysUntilDeadline < 0
+                      ? 'text-red-600'
+                      : task.daysUntilDeadline < 3
+                        ? 'text-orange-600'
+                        : 'text-gray-900'
+                  }`}>
+                    {task.daysUntilDeadline < 0
+                      ? `${Math.abs(task.daysUntilDeadline)} days overdue`
+                      : `${task.daysUntilDeadline} days left`}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Screenshot Section */}
             {task.screenshot && (
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Screenshot</h4>
-                <a 
-                  href={task.screenshot} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  View Screenshot
-                </a>
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Screenshot:</p>
+                <div className="relative border rounded-lg overflow-hidden">
+                  <img 
+                    src={task.screenshot} 
+                    alt="Screenshot" 
+                    className="w-full h-auto max-h-96 object-contain bg-gray-50"
+                  />
+                </div>
               </div>
             )}
 
-            {/* Time Tracking Section */}
             {developerMode && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
