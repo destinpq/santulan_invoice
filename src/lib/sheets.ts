@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { differenceInDays, parse } from 'date-fns';
+import { shouldSkipApiCalls } from './googleApi';
 
 // Define types for our data
 export interface Task {
@@ -38,8 +39,11 @@ let SHEET_NAME = '';
 
 // Function to initialize Google Sheets client
 async function getGoogleSheetsClient() {
-  // Skip API calls during build process
-  if (process.env.SKIP_API_CALLS_DURING_BUILD === "true") {
+  // Add debug log to see the actual value
+  console.log('SKIP_API_CALLS_DURING_BUILD value in sheets.ts:', process.env.SKIP_API_CALLS_DURING_BUILD);
+  
+  // Use the centralized function to check if API calls should be skipped
+  if (shouldSkipApiCalls()) {
     console.log('Skipping Google Sheets API call during build');
     throw new Error('Google Sheets API calls skipped');
   }
@@ -209,13 +213,28 @@ export async function getAllTasks(): Promise<Task[]> {
         let daysUntilDeadline: number | undefined = undefined;
         if (estDeadlineString) {
           try {
-            // Attempt parsing - Adjust format 'MM/dd/yyyy' if your sheet uses a different one
-            const deadlineDate = parse(estDeadlineString, 'M/d/yyyy', new Date()); 
+            // Update format to match mm/dd/yyyy with leading zeros
+            const deadlineDate = parse(estDeadlineString, 'MM/dd/yyyy', new Date()); 
             if (!isNaN(deadlineDate.getTime())) {
               daysUntilDeadline = differenceInDays(deadlineDate, new Date());
+              console.log(`Parsed deadline for task "${description}": ${estDeadlineString} -> ${daysUntilDeadline} days remaining`);
+            } else {
+              console.warn(`Invalid date format for task "${description}": ${estDeadlineString}`);
             }
           } catch (parseError) {
-            console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`);
+            console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`, parseError);
+            
+            // Try alternative date formats as fallback
+            try {
+              // Try M/d/yyyy format (without leading zeros)
+              const altDeadlineDate = parse(estDeadlineString, 'M/d/yyyy', new Date());
+              if (!isNaN(altDeadlineDate.getTime())) {
+                daysUntilDeadline = differenceInDays(altDeadlineDate, new Date());
+                console.log(`Parsed deadline using alternative format for task "${description}": ${estDeadlineString} -> ${daysUntilDeadline} days remaining`);
+              }
+            } catch (altParseError) {
+              console.error(`All parsing attempts failed for deadline: ${estDeadlineString}`);
+            }
           }
         }
 
