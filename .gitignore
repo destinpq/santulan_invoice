@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+CREDS.JSON
 
 # debug
 npm-debug.log*

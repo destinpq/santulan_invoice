@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { differenceInDays, parse } from 'date-fns';
 
 // Define types for our data
 export interface Task {
@@ -26,230 +27,80 @@ export interface Task {
   };
   resolvedOn?: string;
   kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done';
+  estDeadline?: string;
+  daysUntilDeadline?: number;
 }
+
+// Mock data for when Google Sheets API is not available
+const MOCK_TASKS: Task[] = [
+  {
+    id: '1',
+    timestamp: new Date().toISOString(),
+    emailAddress: 'test@example.com',
+    dateReported: '2023-01-15',
+    reportedBy: 'Test User',
+    type: 'bug',
+    severity: 'High',
+    bucket: 'Frontend',
+    description: 'Sample bug report description',
+    month: 'January',
+    developer: 'destinpq',
+    hoursInvested: 3.5,
+    cost: 700,
+    status: 'pending',
+    timeSpent: {
+      totalHours: 3.5,
+      lastUpdated: new Date().toISOString()
+    },
+    kanbanStatus: 'in-progress'
+  },
+  {
+    id: '2',
+    timestamp: new Date().toISOString(),
+    emailAddress: 'client@example.com',
+    dateReported: '2023-02-20',
+    reportedBy: 'Client',
+    type: 'feature',
+    severity: 'Medium',
+    bucket: 'Backend',
+    description: 'Sample feature request description',
+    month: 'February',
+    developer: 'destinpq',
+    hoursInvested: 8,
+    cost: 2400,
+    status: 'completed',
+    resolvedOn: '2023-03-01',
+    timeSpent: {
+      totalHours: 8,
+      lastUpdated: '2023-03-01'
+    },
+    kanbanStatus: 'done'
+  }
+];
 
 // Get the spreadsheet ID from env
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1_40r55K_kFme_UCSqdkKKU2ZwDUmWp6540qRe7imwZk';
 // This will be populated after we get the sheet info
 let SHEET_NAME = '';
 
-// Mock data to use when Google Sheets API is not available or having issues
-const MOCK_TASKS: Task[] = [
-  {
-    id: '1',
-    timestamp: new Date(2023, 4, 1).toISOString(),
-    emailAddress: 'john@example.com',
-    dateReported: '2023-05-01',
-    reportedBy: 'John Doe',
-    type: 'bug',
-    severity: 'High',
-    bucket: 'Frontend',
-    description: 'Login page not working on mobile devices',
-    month: 'May',
-    developer: 'destinpq',
-    hoursInvested: 3.5,
-    cost: 200,
-    status: 'completed',
-    timeSpent: {
-      totalHours: 3.5,
-      lastUpdated: new Date(2023, 4, 5).toISOString()
-    },
-    resolvedOn: new Date(2023, 4, 5).toISOString(),
-    kanbanStatus: 'done'
-  },
-  {
-    id: '2',
-    timestamp: new Date(2023, 4, 15).toISOString(),
-    emailAddress: 'sarah@example.com',
-    dateReported: '2023-05-15',
-    reportedBy: 'Sarah Smith',
-    type: 'feature',
-    severity: 'Medium',
-    bucket: 'Backend',
-    description: 'Add export to CSV functionality',
-    month: 'May',
-    developer: 'destinpq',
-    hoursInvested: 5,
-    cost: 300,
-    status: 'completed',
-    timeSpent: {
-      totalHours: 5,
-      lastUpdated: new Date(2023, 4, 20).toISOString()
-    },
-    resolvedOn: new Date(2023, 4, 20).toISOString(),
-    kanbanStatus: 'done'
-  },
-  {
-    id: '3',
-    timestamp: new Date(2023, 5, 5).toISOString(),
-    emailAddress: 'mike@example.com',
-    dateReported: '2023-06-05',
-    reportedBy: 'Mike Johnson',
-    type: 'bug',
-    severity: 'Critical',
-    bucket: 'Database',
-    description: 'Data not saving to database intermittently',
-    month: 'June',
-    developer: 'destinpq',
-    hoursInvested: 8,
-    cost: 200,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 8,
-      lastUpdated: new Date(2023, 5, 5).toISOString()
-    },
-    resolvedOn: '',
-    kanbanStatus: 'todo'
-  },
-  {
-    id: '4',
-    timestamp: new Date(2023, 5, 15).toISOString(),
-    emailAddress: 'lisa@example.com',
-    dateReported: '2023-06-15',
-    reportedBy: 'Lisa Wong',
-    type: 'feature',
-    severity: 'Low',
-    bucket: 'UI/UX',
-    description: 'Improve dashboard layout for mobile',
-    month: 'June',
-    developer: 'destinpq',
-    hoursInvested: 6.5,
-    cost: 300,
-    status: 'completed',
-    timeSpent: {
-      totalHours: 6.5,
-      lastUpdated: new Date(2023, 5, 25).toISOString()
-    },
-    resolvedOn: new Date(2023, 5, 25).toISOString(),
-    kanbanStatus: 'done'
-  },
-  {
-    id: '5',
-    timestamp: new Date(2023, 6, 1).toISOString(),
-    emailAddress: 'alex@example.com',
-    dateReported: '2023-07-01',
-    reportedBy: 'Alex Kim',
-    type: 'bug',
-    severity: 'Medium',
-    bucket: 'Authentication',
-    description: 'Password reset emails not sending correctly',
-    month: 'July',
-    developer: 'destinpq',
-    hoursInvested: 2.5,
-    cost: 200,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 2.5,
-      lastUpdated: new Date(2023, 6, 1).toISOString()
-    },
-    resolvedOn: '',
-    kanbanStatus: 'todo'
-  },
-  {
-    id: '6',
-    timestamp: new Date(2023, 6, 20).toISOString(),
-    emailAddress: 'jamie@example.com',
-    dateReported: '2023-07-20',
-    reportedBy: 'Jamie Taylor',
-    type: 'feature',
-    severity: 'High',
-    bucket: 'Performance',
-    description: 'Optimize database queries for faster loading',
-    month: 'July',
-    developer: 'destinpq',
-    hoursInvested: 10,
-    cost: 300,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 10,
-      lastUpdated: new Date(2023, 6, 25).toISOString()
-    },
-    resolvedOn: '',
-    kanbanStatus: 'todo'
-  },
-  {
-    id: '7',
-    timestamp: new Date(2023, 7, 5).toISOString(),
-    emailAddress: 'chris@example.com',
-    dateReported: '2023-08-05',
-    reportedBy: 'Chris Lee',
-    type: 'bug',
-    severity: 'Urgent',
-    bucket: 'Security',
-    description: 'Security vulnerability in login process',
-    month: 'August',
-    developer: 'destinpq',
-    hoursInvested: 9,
-    cost: 200,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 9,
-      lastUpdated: new Date(2023, 7, 5).toISOString()
-    },
-    resolvedOn: '',
-    kanbanStatus: 'todo'
-  },
-  {
-    id: '8',
-    timestamp: new Date(2023, 8, 10).toISOString(),
-    emailAddress: 'pat@example.com',
-    dateReported: '2023-09-10',
-    reportedBy: 'Pat Rivera',
-    type: 'feature',
-    severity: 'Medium',
-    bucket: 'Frontend',
-    description: 'Add dark mode support',
-    month: 'September',
-    developer: 'destinpq',
-    hoursInvested: 7,
-    cost: 300,
-    status: 'completed',
-    timeSpent: {
-      totalHours: 7,
-      lastUpdated: new Date(2023, 8, 20).toISOString()
-    },
-    resolvedOn: new Date(2023, 8, 20).toISOString(),
-    kanbanStatus: 'done'
-  },
-  {
-    id: '9',
-    timestamp: new Date(2023, 9, 5).toISOString(),
-    emailAddress: 'logo@example.com',
-    dateReported: '2023-10-05',
-    reportedBy: 'Logo Team',
-    type: 'feature',
-    severity: 'High',
-    bucket: 'Design',
-    description: 'Create new company logo for website header',
-    month: 'October',
-    developer: 'destinpq',
-    hoursInvested: 5,
-    cost: 300,
-    status: 'pending',
-    timeSpent: {
-      totalHours: 5,
-      lastUpdated: new Date(2023, 9, 5).toISOString()
-    },
-    resolvedOn: '',
-    kanbanStatus: 'todo'
-  }
-];
+// Check if we should use mock data
+const USE_MOCK_DATA = process.env.USE_MOCK_DATA === 'true';
 
 // Function to initialize Google Sheets client
 async function getGoogleSheetsClient() {
-  // Check if we're in a development environment and should use mock data
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data instead of connecting to Google Sheets API');
-    // Don't throw an error, just return null to indicate we're using mock data
-    return null;
+  // Skip API calls during build process or if mock data is enabled
+  if (process.env.SKIP_API_CALLS_DURING_BUILD === "true" || USE_MOCK_DATA) {
+    console.log(USE_MOCK_DATA ? 'Using mock data instead of Google Sheets API' : 'Skipping Google Sheets API call during build');
+    throw new Error('Google Sheets API calls skipped');
   }
-  
+
   try {
     let authClient;
     
     // First, try using GOOGLE_APPLICATION_CREDENTIALS JSON string
     if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       try {
+        console.log('Attempting auth via GOOGLE_APPLICATION_CREDENTIALS');
         const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
         authClient = new JWT({
           email: credentials.client_email,
@@ -264,14 +115,17 @@ async function getGoogleSheetsClient() {
     
     // If authClient wasn't created, fall back to individual fields
     if (!authClient) {
+      console.log('Attempting auth via individual env vars...'); 
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
       const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       
       if (!privateKey || !serviceAccountEmail) {
+        console.error('Individual credentials MISSING! Cannot authenticate.'); 
         throw new Error('Missing Google API credentials');
       }
       
       // Properly format the private key
+      console.log('Found individual credentials, formatting key...');
       const formattedKey = privateKey.replace(/\\n/g, '\n');
       
       authClient = new JWT({
@@ -281,7 +135,13 @@ async function getGoogleSheetsClient() {
       });
     }
 
-    await authClient.authorize();
+    // Add timeout to avoid hanging builds
+    const authorizePromise = authClient.authorize();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Authorization timeout after 10 seconds')), 10000);
+    });
+
+    await Promise.race([authorizePromise, timeoutPromise]);
     return google.sheets({ version: 'v4', auth: authClient });
   } catch (error) {
     console.error('Error authenticating with Google Sheets API:', error);
@@ -298,16 +158,19 @@ async function getSheetInfo() {
   try {
     const sheets = await getGoogleSheetsClient();
     
-    if (!sheets) {
-      throw new Error('Could not initialize Google Sheets client');
-    }
-    
-    // Get spreadsheet information
-    const spreadsheet = await sheets.spreadsheets.get({
+    // Add timeout for API request
+    const getInfoPromise = sheets.spreadsheets.get({
       spreadsheetId: SPREADSHEET_ID,
     });
     
-    if (spreadsheet.data.sheets && spreadsheet.data.sheets.length > 0) {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Spreadsheet info timeout after 10 seconds')), 10000);
+    });
+    
+    // Use Promise.race to implement timeout
+    const spreadsheet = await Promise.race([getInfoPromise, timeoutPromise]);
+    
+    if (spreadsheet.data?.sheets && spreadsheet.data.sheets.length > 0) {
       // Use the first sheet as default
       const firstSheet = spreadsheet.data.sheets[0];
       if (firstSheet.properties && firstSheet.properties.title) {
@@ -317,29 +180,43 @@ async function getSheetInfo() {
     }
     
     throw new Error('No sheets found in the spreadsheet');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting sheet info:', error);
-    throw error;
+    // Still throw but with a more informative message
+    throw new Error(`Sheet info error: ${error.message || 'Unknown error'}`);
   }
 }
 
 // Get all tasks from the spreadsheet
 export async function getAllTasks(): Promise<Task[]> {
+  // Use mock data if enabled
+  if (USE_MOCK_DATA) {
+    console.log('Using mock task data');
+    return [...MOCK_TASKS];
+  }
+
   try {
     const sheets = await getGoogleSheetsClient();
-    if (!sheets) {
-      throw new Error('Could not initialize Google Sheets client');
-    }
     
     // Make sure we have the correct sheet name
     const sheetName = await getSheetInfo();
     
-    // Read all data
-    const response = await sheets.spreadsheets.values.get({
+    console.log(`Attempting to fetch data from sheet: ${sheetName}`); // Log before fetch
+    
+    // Add timeout for API request
+    const getDataPromise = sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${sheetName}`,
     });
+    
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Fetching data timeout after 15 seconds')), 15000);
+    });
+    
+    // Use Promise.race to implement timeout
+    const response = await Promise.race([getDataPromise, timeoutPromise]);
 
+    console.log('Successfully fetched data, processing rows...'); // Log after fetch
     const rows = response.data.values || [];
     if (rows.length <= 1) {
       console.log('No data found in sheet (or only headers)');
@@ -347,51 +224,103 @@ export async function getAllTasks(): Promise<Task[]> {
     }
     
     // Skip the header row and map the data to our Task interface
-    return rows.slice(1).map((row, index) => {
-      const id = row[0] || `generated-${index}`;
-      const hoursInvested = parseFloat(row[9] || '0');
-      const resolvedOn = row[10] || '';
-      const type = determineBugOrFeature(row[4] || '');
-      
-      // Determine kanban status based on resolvedOn field
-      let kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done' = 'todo';
-      if (resolvedOn) {
-        kanbanStatus = 'done';
-      } else if (row[15]) { // Check if there's an explicit kanban status in column P
-        const status = (row[15] || '').toLowerCase();
-        if (status === 'in-progress' || status === 'review') {
-          kanbanStatus = status;
-        }
-      }
+    return rows.slice(1).map((row: any[], index: number) => {
+      console.log(`Processing row ${index + 2}`); // Log each row
+      try { // Add try...catch inside map
+        // Corrected indices based on screenshot:
+        const timestamp = row[0] || ''; // Column A: Timestamp (Used for timestamp field)
+        const emailAddress = row[1] || ''; // Column B: Email Address
+        const dateReported = row[2] || ''; // Column C: Date reported
+        const reportedBy = row[3] || ''; // Column D: Reported by
+        const typeField = row[4] || ''; // Column E: Is it a new feature or bug?
+        const severity = row[5] || 'Medium'; // Column F: Urgency / Severity of issue
+        const screenshot = row[6] || ''; // Column G: Attach screenshot if bug
+        const bucket = row[7] || 'Other'; // Column H: What bucket does it fall under?
+        const description = row[8] || ''; // Column I: Description of task
+        const hoursInvested = parseFloat(row[9] || '0'); // Column J: Time invested
+        const resolvedOn = row[10] || ''; // Column K: Resolved on
+        // Column L: Status (Not directly used in Task interface)
+        const priority = row[12] || ''; // Column M: Priority (Not directly used, maybe map to severity?)
+        const devName = row[13] || 'destinpq'; // Column N: Dev name (Map to developer field)
+        const kanbanBoardStatus = (row[14] || '').toLowerCase(); // Column O: Kanban Board status
+        const devStatus = (row[15] || '').toLowerCase(); // Column P: Dev status (Use this for explicit kanban status)
+        const estDeadlineString = row[16] || ''; // Column Q: Est Deadline
 
-      return {
-        id,
-        timestamp: row[0] || new Date().toISOString(),
-        emailAddress: row[1] || '',
-        dateReported: row[2] || '',
-        reportedBy: row[3] || '',
-        type,
-        severity: row[5] || 'Medium',
-        screenshot: row[6] || '',
-        bucket: row[7] || 'Other',
-        description: row[8] || '',
-        hoursInvested,
-        resolvedOn,
-        month: determineMonth(row[2] || ''),
-        developer: 'destinpq',
-        cost: determineCost(type, hoursInvested),
-        status: resolvedOn ? 'completed' : 'pending',
-        timeSpent: {
-          totalHours: hoursInvested,
-          lastUpdated: resolvedOn || new Date().toISOString()
-        },
-        kanbanStatus,
-        lastModified: resolvedOn || ''
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-    throw error;
+        // Generate a unique ID - Using timestamp + index might be better than just timestamp
+        const id = `${timestamp}-${index}` || `generated-${index}`;
+        
+        const type = determineBugOrFeature(typeField);
+        
+        // Determine kanban status: Check explicit column P first, then column O, then resolvedOn
+        let kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done' = 'todo';
+        if (devStatus === 'in-progress' || devStatus === 'review') {
+            kanbanStatus = devStatus;
+        } else if (kanbanBoardStatus === 'in-progress' || kanbanBoardStatus === 'review') {
+            kanbanStatus = kanbanBoardStatus;
+        } else if (devStatus === 'done' || kanbanBoardStatus === 'done' || resolvedOn) {
+            kanbanStatus = 'done';
+        }
+
+        // Calculate days until deadline
+        let daysUntilDeadline: number | undefined = undefined;
+        if (estDeadlineString) {
+          try {
+            // Attempt parsing - Adjust format 'MM/dd/yyyy' if your sheet uses a different one
+            const deadlineDate = parse(estDeadlineString, 'M/d/yyyy', new Date()); 
+            if (!isNaN(deadlineDate.getTime())) {
+              daysUntilDeadline = differenceInDays(deadlineDate, new Date());
+            }
+          } catch (parseError) {
+            console.warn(`Could not parse deadline date for row ${index + 2}: ${estDeadlineString}`);
+          }
+        }
+
+        return {
+          id,
+          timestamp: timestamp || new Date().toISOString(),
+          emailAddress,
+          dateReported,
+          reportedBy,
+          type,
+          severity, // Or potentially map from priority (row[12])
+          screenshot,
+          bucket,
+          description,
+          hoursInvested,
+          resolvedOn,
+          month: determineMonth(dateReported || ''), // Determine month from Date Reported
+          developer: devName, // Use Dev Name from sheet
+          cost: determineCost(type, hoursInvested), // Calculate cost
+          status: resolvedOn ? 'completed' : 'pending', // Determine status based on Resolved On
+          timeSpent: {
+            totalHours: hoursInvested,
+            lastUpdated: resolvedOn || new Date().toISOString()
+          },
+          kanbanStatus, // Use determined Kanban status
+          estDeadline: estDeadlineString, // Keep the original string
+          daysUntilDeadline, // Assign calculated days
+          // lastModified: resolvedOn || '' // Removed, not in Task interface
+        };
+      } catch (mapError: any) {
+        console.error(`Error processing row ${index + 2}:`, mapError);
+        console.error('Row data:', row);
+        // Return a minimal or null object, or re-throw if needed
+        return null; // Returning null for now, will filter out later
+      }
+    }).filter(task => task !== null) as Task[]; // Filter out nulls from failed rows
+  } catch (error: any) {
+    console.error('Error fetching or processing tasks in getAllTasks:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2)); // Log full error details
+    
+    // Fall back to mock data if API call fails
+    if (error.message.includes('Missing Google API credentials') || 
+        error.message.includes('Google Sheets API calls skipped')) {
+      console.log('Falling back to mock data');
+      return [...MOCK_TASKS];
+    }
+    
+    // Throw but with informative message
+    throw new Error(`Error fetching tasks: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -432,25 +361,24 @@ function determineMonth(dateString: string): string {
 
 // Add a new task to the spreadsheet
 export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean> {
+  // Handle mock data
+  if (USE_MOCK_DATA) {
+    const id = Date.now().toString();
+    const cost = determineCost(task.type, task.hoursInvested);
+    
+    const newTask: Task = {
+      ...task,
+      id,
+      timestamp: new Date().toISOString(),
+      cost,
+    };
+    
+    MOCK_TASKS.push(newTask);
+    return true;
+  }
+
   try {
-    // If using mock data, just log the task that would be added
-    if (process.env.USE_MOCK_DATA === 'true') {
-      console.log('Mock data mode: Would add task:', {
-        ...task,
-        id: Date.now().toString(),
-        cost: task.type === 'bug' ? 200 : 300,
-        timestamp: new Date().toISOString(),
-      });
-      return true;
-    }
-    
     const sheets = await getGoogleSheetsClient();
-    
-    // If sheets is null (mock data), return as if successful
-    if (!sheets) {
-      return true;
-    }
-    
     const sheetName = await getSheetInfo();
     
     // Generate a unique ID
@@ -494,9 +422,12 @@ export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean>
   } catch (error) {
     console.error('Error adding task:', error);
     
-    // If error but in development with mock data enabled, pretend it worked
-    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
-      return true;
+    // Fall back to mock if API call fails due to credential issues
+    if (error instanceof Error && 
+        (error.message.includes('Missing Google API credentials') || 
+        error.message.includes('Google Sheets API calls skipped'))) {
+      
+      return addTask(task); // Will use the mock data path
     }
     
     return false;
@@ -505,20 +436,24 @@ export async function addTask(task: Omit<Task, 'id' | 'cost'>): Promise<boolean>
 
 // Update task hours
 export async function updateTaskHours(taskId: string, hours: number): Promise<boolean> {
+  // Handle mock data
+  if (USE_MOCK_DATA) {
+    const taskIndex = MOCK_TASKS.findIndex(task => task.id === taskId);
+    if (taskIndex === -1) return false;
+    
+    MOCK_TASKS[taskIndex].hoursInvested = hours;
+    MOCK_TASKS[taskIndex].cost = determineCost(MOCK_TASKS[taskIndex].type, hours);
+    MOCK_TASKS[taskIndex].timeSpent = {
+      ...MOCK_TASKS[taskIndex].timeSpent,
+      totalHours: hours,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    return true;
+  }
+
   try {
-    // If using mock data, just log the update that would happen
-    if (process.env.USE_MOCK_DATA === 'true') {
-      console.log(`Mock data mode: Would update task ${taskId} hours to ${hours}`);
-      return true;
-    }
-    
     const sheets = await getGoogleSheetsClient();
-    
-    // If sheets is null (mock data), return as if successful
-    if (!sheets) {
-      return true;
-    }
-    
     const sheetName = await getSheetInfo();
     
     // First get all tasks to find the row index
@@ -546,9 +481,12 @@ export async function updateTaskHours(taskId: string, hours: number): Promise<bo
   } catch (error) {
     console.error('Error updating task hours:', error);
     
-    // If error but in development with mock data enabled, pretend it worked
-    if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
-      return true;
+    // Fall back to mock if API call fails due to credential issues
+    if (error instanceof Error && 
+        (error.message.includes('Missing Google API credentials') || 
+        error.message.includes('Google Sheets API calls skipped'))) {
+      
+      return updateTaskHours(taskId, hours); // Will use the mock data path
     }
     
     return false;
@@ -558,47 +496,19 @@ export async function updateTaskHours(taskId: string, hours: number): Promise<bo
 // Get all tasks, developer key is just for authentication
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getTasksByDeveloper(developerKey: string): Promise<Task[]> {
-  // Changed to return all tasks regardless of developer assignment
-  // The developer key is only used for authentication, not filtering
-  
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for tasks');
-    return MOCK_TASKS; // Return all mock tasks
-  }
-  
   try {
-    const allTasks = await getAllTasks();
+    const allTasks = await getAllTasks(); // This already handles mock data
     return allTasks; // Return all tasks instead of filtering by developer
   } catch (error) {
     console.error('Error getting tasks:', error);
-    
-    // Return all mock data in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for tasks (fallback)');
-      return MOCK_TASKS; // Return all mock tasks
-    }
-    
     return [];
   }
 }
 
 // Get tasks grouped by month
 export async function getTasksByMonth(): Promise<Record<string, Task[]>> {
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for tasks by month');
-    return MOCK_TASKS.reduce((acc, task) => {
-      if (!acc[task.month]) {
-        acc[task.month] = [];
-      }
-      acc[task.month].push(task);
-      return acc;
-    }, {} as Record<string, Task[]>);
-  }
-  
   try {
-    const allTasks = await getAllTasks();
+    const allTasks = await getAllTasks(); // This already handles mock data
     return allTasks.reduce((acc, task) => {
       if (!acc[task.month]) {
         acc[task.month] = [];
@@ -608,39 +518,14 @@ export async function getTasksByMonth(): Promise<Record<string, Task[]>> {
     }, {} as Record<string, Task[]>);
   } catch (error) {
     console.error('Error getting tasks by month:', error);
-    
-    // Return mock data grouped by month in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for tasks by month (fallback)');
-      return MOCK_TASKS.reduce((acc, task) => {
-        if (!acc[task.month]) {
-          acc[task.month] = [];
-        }
-        acc[task.month].push(task);
-        return acc;
-      }, {} as Record<string, Task[]>);
-    }
-    
     return {};
   }
 }
 
 // Get tasks grouped by bucket
 export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
-  // If using mock data, return it directly
-  if (process.env.USE_MOCK_DATA === 'true') {
-    console.log('Using mock data for tasks by bucket');
-    return MOCK_TASKS.reduce((acc, task) => {
-      if (!acc[task.bucket]) {
-        acc[task.bucket] = [];
-      }
-      acc[task.bucket].push(task);
-      return acc;
-    }, {} as Record<string, Task[]>);
-  }
-  
   try {
-    const allTasks = await getAllTasks();
+    const allTasks = await getAllTasks(); // This already handles mock data
     return allTasks.reduce((acc, task) => {
       if (!acc[task.bucket]) {
         acc[task.bucket] = [];
@@ -650,19 +535,6 @@ export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
     }, {} as Record<string, Task[]>);
   } catch (error) {
     console.error('Error getting tasks by bucket:', error);
-    
-    // Return mock data grouped by bucket in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Using mock data for tasks by bucket (fallback)');
-      return MOCK_TASKS.reduce((acc, task) => {
-        if (!acc[task.bucket]) {
-          acc[task.bucket] = [];
-        }
-        acc[task.bucket].push(task);
-        return acc;
-      }, {} as Record<string, Task[]>);
-    }
-    
     return {};
   }
 }
@@ -670,7 +542,7 @@ export async function getTasksByBucket(): Promise<Record<string, Task[]>> {
 // Calculate pending money
 export async function calculatePendingMoney(): Promise<number> {
   try {
-    const allTasks = await getAllTasks();
+    const allTasks = await getAllTasks(); // This already handles mock data
     console.log('Calculating pending money for all tasks...');
     
     const total = allTasks.reduce((total, task) => {
@@ -691,7 +563,7 @@ export async function calculatePendingMoney(): Promise<number> {
 // Calculate total time invested
 export async function calculateTotalHours(): Promise<number> {
   try {
-    const allTasks = await getAllTasks();
+    const allTasks = await getAllTasks(); // This already handles mock data
     return allTasks.reduce((total, task) => total + task.hoursInvested, 0);
   } catch (error) {
     console.error('Error calculating total hours:', error);
@@ -701,12 +573,30 @@ export async function calculateTotalHours(): Promise<number> {
 
 // Update task status
 export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'in-progress' | 'review' | 'done'): Promise<boolean> {
-  try {
-    const sheets = await getGoogleSheetsClient();
-    if (!sheets) {
-      throw new Error('Could not initialize Google Sheets client');
+  // Handle mock data
+  if (USE_MOCK_DATA) {
+    const taskIndex = MOCK_TASKS.findIndex(task => task.id === taskId);
+    if (taskIndex === -1) return false;
+    
+    MOCK_TASKS[taskIndex].kanbanStatus = kanbanStatus;
+    
+    // If status is set to "done", update the resolved date and other fields
+    if (kanbanStatus === 'done') {
+      const currentDate = new Date().toLocaleDateString();
+      MOCK_TASKS[taskIndex].resolvedOn = currentDate;
+      MOCK_TASKS[taskIndex].status = 'completed';
+      MOCK_TASKS[taskIndex].cost = determineCost(MOCK_TASKS[taskIndex].type, MOCK_TASKS[taskIndex].hoursInvested);
+    } else {
+      // If moving away from done, clear the resolved date and set status back to pending
+      MOCK_TASKS[taskIndex].resolvedOn = undefined;
+      MOCK_TASKS[taskIndex].status = 'pending';
     }
     
+    return true;
+  }
+
+  try {
+    const sheets = await getGoogleSheetsClient();
     const sheetName = await getSheetInfo();
     
     // First get all tasks to find the row index
@@ -795,6 +685,15 @@ export async function updateTaskStatus(taskId: string, kanbanStatus: 'todo' | 'i
     }
   } catch (error) {
     console.error('Error updating task status:', error);
+    
+    // Fall back to mock if API call fails due to credential issues
+    if (error instanceof Error && 
+        (error.message.includes('Missing Google API credentials') || 
+        error.message.includes('Google Sheets API calls skipped'))) {
+      
+      return updateTaskStatus(taskId, kanbanStatus); // Will use the mock data path
+    }
+    
     return false;
   }
 }
